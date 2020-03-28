@@ -23,6 +23,30 @@ use std::path::Path;
 //
 // jot supports hashtags for topics #foo #bar and can display/edit tags.
 //
+//
+//
+// TODO: I do think we want to support multiple lines somehow. Idk how :/
+
+// have special tags #red, #blue, #green, #yellow, etc.
+enum PeriodTimeUnit {
+
+    Hours, Days, Weeks, Months, Years
+}
+enum MessageType {
+
+    Regular,
+
+    // Due date.
+    Reminder(DateTime<FixedOffset>),
+
+    // Start date, period, period time unit.
+    // e.g. "starting X date, every 2 weeks BLAH"
+    ReoccuringReminder(DateTime<FixedOffset>, u32, PeriodTimeUnit),
+
+    // e.g. "mark this date as Fred's birthday"
+    DateMarker(DateTime<FixedOffset>)
+
+}
 
 #[derive(PartialEq, Eq, Clone)]
 struct JotLine {
@@ -54,12 +78,20 @@ fn parse_line(line: &str) -> Option<JotLine> {
         let date = caps.get(1)?.as_str().trim().to_owned();
         let message = caps.get(2)?.as_str();
 
+        let mut tags = Vec::new();
+        let tag_regex = Regex::new(r"\s#(.*?)[\s|$]");
+        for cap in re.captures_iter(message) {
+            let tag = cap.get(1)?.as_str().trim().to_string();
+            tags.push(tag);
+        }
+
+
         let parsed_date = DateTime::parse_from_rfc3339(&date).ok()?;
         return Some(JotLine {
             datetime: parsed_date,
             raw: line.to_owned(),
             message: message.to_string(),
-            tags: vec![]
+            tags
         })
     }
 
@@ -115,13 +147,9 @@ fn main() -> Result<()> {
 
     if let Some(matches) = matches.subcommand_matches("down") {
         let local: DateTime<Local> = Local::now();
-        let line = std::env::args()
-            .skip_while(|arg| arg != "down") // Find the start of our messages.
-            .skip(1)
-            .collect::<Vec<String>>()
-            .join(" ");
+        let message = scrawl::new()?;
 
-        let out = format!("{} {}", now(), line);
+        let out = format!("{} {}", now(), message);
 
         let mut file = OpenOptions::new().append(true).open(journal)?;
         writeln!(file, "{}", out)?;
