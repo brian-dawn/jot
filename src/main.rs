@@ -1,10 +1,10 @@
 use notify_rust::Notification;
 
-use colorful::Color;
-use colorful::Colorful;
 use anyhow::Result;
 use chrono::prelude::*;
 use clap::{App, Arg, SubCommand};
+use colorful::Color;
+use colorful::Colorful;
 use regex::Regex;
 use std::fs::File;
 use std::fs::OpenOptions;
@@ -29,11 +29,13 @@ use std::path::Path;
 
 // have special tags #red, #blue, #green, #yellow, etc.
 enum PeriodTimeUnit {
-
-    Hours, Days, Weeks, Months, Years
+    Hours,
+    Days,
+    Weeks,
+    Months,
+    Years,
 }
 enum MessageType {
-
     Regular,
 
     // Due date.
@@ -44,8 +46,7 @@ enum MessageType {
     ReoccuringReminder(DateTime<FixedOffset>, u32, PeriodTimeUnit),
 
     // e.g. "mark this date as Fred's birthday"
-    DateMarker(DateTime<FixedOffset>)
-
+    DateMarker(DateTime<FixedOffset>),
 }
 
 #[derive(PartialEq, Eq, Clone)]
@@ -79,15 +80,18 @@ fn parse_line(line: &str) -> Option<JotLine> {
         let message = caps.get(2)?.as_str();
 
         let tag_regex = Regex::new(r"\#[a-zA-Z][0-9a-zA-Z_]*").unwrap();
-        let tags = tag_regex.find_iter(message).map(|tag| tag.as_str().to_owned()).collect();
+        let tags = tag_regex
+            .find_iter(message)
+            .map(|tag| tag.as_str().to_owned())
+            .collect();
 
         let parsed_date = DateTime::parse_from_rfc3339(&date).ok()?;
         return Some(JotLine {
             datetime: parsed_date,
             raw: line.to_owned(),
             message: message.to_string(),
-            tags
-        })
+            tags,
+        });
     }
 
     None
@@ -119,27 +123,6 @@ fn main() -> Result<()> {
         )
         .get_matches();
 
-    if let Some(matches) = matches.subcommand_matches("cat") {
-        let file = File::open(journal)?;
-
-        for line in io::BufReader::new(file).lines() {
-            let ln = line?;
-            if let Some(parsed) = parse_line(&ln) {
-
-                parsed.pprint();
-            } else {
-                // print out just the raw string.
-                //println!("{}", ln);
-            }
-        }
-        return Ok(());
-    }
-
-    if let Some(matches) = matches.subcommand_matches("tag") {
-        // TODO: Run tag subcommand.
-        return Ok(());
-    }
-
     if let Some(matches) = matches.subcommand_matches("down") {
         let local: DateTime<Local> = Local::now();
         let message = scrawl::new()?;
@@ -157,5 +140,27 @@ fn main() -> Result<()> {
 
         return Ok(());
     }
+
+    if let Some(matches) = matches.subcommand_matches("cat") {
+        let file = File::open(journal)?;
+
+        for line in io::BufReader::new(file).lines() {
+            let ln = line?;
+            if let Some(parsed) = parse_line(&ln) {
+                parsed.pprint();
+            } else {
+                // print out just the raw string.
+                //println!("{}", ln);
+            }
+        }
+        return Ok(());
+    }
+
+    if let Some(matches) = matches.subcommand_matches("tag") {
+        // TODO: Run tag subcommand.
+        //
+        return Ok(());
+    }
+
     Ok(())
 }

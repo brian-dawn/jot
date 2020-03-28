@@ -2,7 +2,10 @@
 
 ## Example commands
 
-* jot [nothing that matched means just append it to the journal]
+* jot down <- write a generic message.
+* jot remind tomorrow 3:00
+* jot remind 3:00 tomorrow
+* jot periodic every other tuesday
 * jot less (opens the journal in less)
 * jot -d (run the daemon mode to send notifications)
 * jot tag list
