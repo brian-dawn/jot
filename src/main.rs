@@ -78,13 +78,8 @@ fn parse_line(line: &str) -> Option<JotLine> {
         let date = caps.get(1)?.as_str().trim().to_owned();
         let message = caps.get(2)?.as_str();
 
-        let mut tags = Vec::new();
-        let tag_regex = Regex::new(r"\s#(.*?)[\s|$]");
-        for cap in re.captures_iter(message) {
-            let tag = cap.get(1)?.as_str().trim().to_string();
-            tags.push(tag);
-        }
-
+        let tag_regex = Regex::new(r"\#[a-zA-Z][0-9a-zA-Z_]*").unwrap();
+        let tags = tag_regex.find_iter(message).map(|tag| tag.as_str().to_owned()).collect();
 
         let parsed_date = DateTime::parse_from_rfc3339(&date).ok()?;
         return Some(JotLine {
@@ -134,7 +129,7 @@ fn main() -> Result<()> {
                 parsed.pprint();
             } else {
                 // print out just the raw string.
-                println!("{}", ln);
+                //println!("{}", ln);
             }
         }
         return Ok(());
