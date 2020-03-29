@@ -17,23 +17,6 @@ use std::io::{self, BufRead};
 mod config;
 mod time_infer;
 
-// jot.txt contains a series of logs and stuff.
-// jot also needs to be a daemon process so it can parse jot files
-//
-// we have a config toml file that lives somewhere.
-// this stores where the jot.txt file lives.
-// TODO we don't need daemon mode we just need a cron job with a way to mark locally if stuff was
-// already notified.
-
-// TODO jot init for creating a new jot db.
-//
-//
-// jot supports hashtags for topics @foo @bar and can display/edit tags.
-//
-//
-//
-// TODO: I do think we want to support multiple lines somehow. Idk how :/
-
 #[derive(Debug, Eq, PartialEq, Clone)]
 enum MessageType {
     Regular, // [date]
@@ -107,11 +90,6 @@ impl JotLine {
         let time_difference = now - self.datetime;
         let (amount, amount_unit) = pretty_duration(time_difference);
         let header_string = match self.msg_type {
-            // MessageType::Todo(_is_done) => format!(
-            //     "[{} {}s ago]",
-            //     amount.to_string().bold().blue(),
-            //     amount_unit
-            // ),
             MessageType::Reminder(reminder_date) => {
                 if reminder_date < now {
                     // Reminder is in the past.
@@ -145,6 +123,7 @@ impl JotLine {
     }
 }
 
+/// Stream all the jots from disk.
 fn stream_jots(config: config::Config) -> Result<impl Iterator<Item = JotLine>> {
     let file = File::open(config.journal_path)?;
     let _buffer = String::new();
@@ -228,7 +207,6 @@ fn parse_note(header_line: &str, message: &str) -> Option<JotLine> {
     })
 }
 
-// TODO: jot should prepend to the journal
 // TODO: we can provide a list of tags inside the editor that are already in use.
 // TODO: lets just load everything into memory and for todos we can update the reminder
 //       header itself that way you can always re-axmine files.
@@ -247,7 +225,7 @@ fn main() -> Result<()> {
                 .about("search the journal")
                 .arg(Arg::with_name("PATTERN").help("regex to grep for")),
         )
-        .subcommand(SubCommand::with_name("tag").about("commands around tags"))
+        .subcommand(SubCommand::with_name("tags").about("list all tags"))
         .subcommand(SubCommand::with_name("down").about("write to the journal"))
         .subcommand(
             SubCommand::with_name("reminder")
@@ -361,13 +339,11 @@ fn main() -> Result<()> {
         }
         return Ok(());
     }
-    if let Some(_matches) = matches.subcommand_matches("tag") {
+    if let Some(_matches) = matches.subcommand_matches("tags") {
         let tags: HashSet<String> = stream_jots(config)?.flat_map(|jot| jot.tags).collect();
         for tag in tags {
             println!("{}", tag);
         }
-        // TODO: Run tag subcommand.
-        //
         return Ok(());
     }
 
