@@ -85,6 +85,8 @@ impl JotLine {
         self.pprint_with_custom_msg(None);
     }
 
+    /// Pretty print a Jot, we need to support custom messages for
+    /// highlighting (such as via grep).
     fn pprint_with_custom_msg(&self, msg_override: Option<&str>) {
         let now: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
         let time_difference = now - self.datetime;
@@ -135,7 +137,10 @@ fn stream_jots(config: config::Config) -> Result<impl Iterator<Item = JotLine>> 
             let mut buf = String::new();
             let mut header_line = String::new();
 
-            let result = loop {
+            // Warning: It's not clear here but the loop is returning a value.
+            // normally I would have bound it into a variable but clippy didn't
+            // like that. :(
+            loop {
                 let line = it.peek();
 
                 // If we reached the EOF then process the last in the buffer.
@@ -145,8 +150,8 @@ fn stream_jots(config: config::Config) -> Result<impl Iterator<Item = JotLine>> 
                 }
 
                 // TODO: move to regex match for date stamp
-                if line?.trim().starts_with("[") {
-                    if buf.len() > 0 {
+                if line?.trim().starts_with('[') {
+                    if !buf.is_empty(){
                         // We finished reading a jot.
                         let result = parse_note(&header_line, &buf);
                         if result.is_some() {
@@ -163,8 +168,7 @@ fn stream_jots(config: config::Config) -> Result<impl Iterator<Item = JotLine>> 
                     buf.push_str(&line?);
                 }
                 it.next()?;
-            };
-            result
+            }
         }))
 }
 
@@ -244,8 +248,8 @@ fn main() -> Result<()> {
         let mut file = OpenOptions::new().append(true).open(config.journal_path)?;
         writeln!(file, "{}", now())?;
         writeln!(file, "{}", message.trim())?;
-        writeln!(file, "")?;
-        writeln!(file, "")?;
+        writeln!(file)?;
+        writeln!(file)?;
 
         return Ok(());
     }
@@ -260,8 +264,8 @@ fn main() -> Result<()> {
         let mut file = OpenOptions::new().append(true).open(config.journal_path)?;
         writeln!(file, "{}", now_reminder(reminder_time))?;
         writeln!(file, "{}", message.trim())?;
-        writeln!(file, "")?;
-        writeln!(file, "")?;
+        writeln!(file)?;
+        writeln!(file)?;
 
         return Ok(());
     }
@@ -306,7 +310,7 @@ fn main() -> Result<()> {
     if let Some(_matches) = matches.subcommand_matches("cat") {
         for x in stream_jots(config)? {
             x.pprint();
-            println!("");
+            println!();
         }
         return Ok(());
     }
@@ -335,7 +339,7 @@ fn main() -> Result<()> {
             }
 
             jot.pprint_with_custom_msg(Some(&msg));
-            println!("");
+            println!();
         }
         return Ok(());
     }

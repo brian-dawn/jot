@@ -97,7 +97,7 @@ pub fn infer_future_time(input: &str) -> Option<DateTime<Local>> {
 
     let parts = cleaned.split_whitespace().collect::<Vec<_>>();
 
-    return time_from_now(parts);
+    time_from_now(parts)
     // if parts.get(0)?.parse::<Weekday>().is_ok() {
     // }
 
