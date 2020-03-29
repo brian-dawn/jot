@@ -20,3 +20,7 @@
 * [timestamp] croc is useful for sending data #tools #cli #p2p #sync #share
 
 
+## Setup notifications.
+
+    crontab -e
+    * * * * * /path/to/jot notify
