@@ -99,7 +99,7 @@ impl JotLine {
                     let remind_time = now - reminder_date;
                     let (fut_amount, fut_amount_unit) = pretty_duration(remind_time);
                     format!(
-                        "reminded {} {}s ago:",
+                        "reminded {} {}s ago",
                         fut_amount.to_string().bold().white(),
                         fut_amount_unit
                     )
@@ -108,20 +108,22 @@ impl JotLine {
                     let remind_time = reminder_date - now;
                     let (fut_amount, fut_amount_unit) = pretty_duration(remind_time);
                     format!(
-                        "in {} {}s:",
+                        "in {} {}s",
                         fut_amount.to_string().bold().green(),
                         fut_amount_unit
                     )
                 }
             }
             MessageType::Regular => {
-                format!("{} {}s ago:", amount.to_string().bold().blue(), amount_unit)
+                format!("{} {}s ago", amount.to_string().bold().blue(), amount_unit)
             }
         };
 
         let _pretty_date = self.datetime.format("%Y-%m-%d %H:%M").to_string().blue();
         let msg = msg_override.unwrap_or(&self.message).trim();
-        println!("{}\n{}", header_string, msg);
+        println!("―――――――――――――――――――――――――――――――――");
+        println!("[{}]\n{}", header_string, msg);
+        println!("―――――――――――――――――――――――――――――――――");
     }
 }
 
