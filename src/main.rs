@@ -1,4 +1,8 @@
+#[macro_use]
+extern crate lazy_static;
+
 use notify_rust::Notification;
+use unicode_segmentation::UnicodeSegmentation;
 
 use anyhow::{Context, Result};
 use chrono::prelude::*;
@@ -13,7 +17,6 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::io::{self, BufRead};
 
-
 mod config;
 mod time_infer;
 
@@ -26,36 +29,53 @@ enum MessageType {
 
     // Start date, period, period time unit.
     // e.g. "starting X date, every 2 weeks BLAH"
-    //ReoccuringReminder(DateTime<FixedOffset>, u32, PeriodTimeUnit),
+    //ReoccuringReminder(DateTime<FixedOffset>, usize, PeriodTimeUnit),
 
     // e.g. "mark this date as Fred's birthday"
     //DateMarker(DateTime<FixedOffset>),
 
-    // Completed
-    //Todo(bool),
+    // Completed date, if not present we haven't completed yet.
+    Todo(Option<DateTime<Local>>),
 }
+
+const TODO_NOT_DONE_PLACEHOLDER: &'static str = "not-done";
+const REMIND_HEADER: &'static str = "remind";
+const TODO_HEADER: &'static str = TODO;
+
+const REMINDER: &'static str = "reminder";
+const REMINDERS: &'static str = "reminders";
+
+const TODO: &'static str = "todo";
+const TODOS: &'static str = "todos";
+
+const NOTE: &'static str = "note";
+const NOTES: &'static str = "notes";
 
 impl MessageType {
     fn from_string(i: &str) -> Option<MessageType> {
         let parts: Vec<&str> = i.split_whitespace().collect();
         match *parts.get(0)? {
-            "remind" => {
+            REMIND_HEADER => {
                 let date = parts.get(2)?;
                 let parsed_date: DateTime<FixedOffset> =
                     DateTime::parse_from_rfc3339(&date).ok()?;
                 Some(MessageType::Reminder(DateTime::from(parsed_date)))
             }
+            TODO_HEADER => {
+                let date = parts.get(1)?.trim();
+                if date == TODO_NOT_DONE_PLACEHOLDER {
+                    Some(MessageType::Todo(None))
+                } else {
+                    // Attempt to parse the completed date.
+
+                    let parsed_date: DateTime<FixedOffset> =
+                        DateTime::parse_from_rfc3339(&date).ok()?;
+                    Some(MessageType::Todo(Some(DateTime::from(parsed_date))))
+                }
+            }
             _ => Some(MessageType::Regular),
         }
     }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-struct JotLine {
-    datetime: DateTime<Local>,
-    message: String,
-    tags: Vec<String>,
-    msg_type: MessageType,
 }
 
 fn pretty_duration<'a>(time_difference: chrono::Duration) -> (i64, &'a str) {
@@ -80,6 +100,27 @@ fn pretty_duration<'a>(time_difference: chrono::Duration) -> (i64, &'a str) {
     (amount, amount_unit)
 }
 
+fn pluralize_time_unit(amount: i64, time_unit: &str) -> String {
+    if amount == 1 {
+        return time_unit.to_string();
+    }
+    return format!("{}s", time_unit);
+}
+
+fn print_bar(size: usize) {
+    let s = std::iter::repeat("―").take(size).collect::<String>();
+    println!("{}", s);
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+struct JotLine {
+    datetime: DateTime<Local>,
+    message: String,
+    tags: HashSet<String>,
+    msg_type: MessageType,
+    id: usize,
+}
+
 impl JotLine {
     fn pprint(&self) {
         self.pprint_with_custom_msg(None);
@@ -91,6 +132,7 @@ impl JotLine {
         let now: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
         let time_difference = now - self.datetime;
         let (amount, amount_unit) = pretty_duration(time_difference);
+        let plural_amount_unit = pluralize_time_unit(amount, amount_unit);
         let header_string = match self.msg_type {
             MessageType::Reminder(reminder_date) => {
                 if reminder_date < now {
@@ -98,37 +140,79 @@ impl JotLine {
 
                     let remind_time = now - reminder_date;
                     let (fut_amount, fut_amount_unit) = pretty_duration(remind_time);
+
                     format!(
-                        "reminded {} {}s ago",
+                        "{} reminded {} {} ago",
+                        REMINDER.white().bold(),
                         fut_amount.to_string().bold().white(),
-                        fut_amount_unit
+                        pluralize_time_unit(fut_amount, fut_amount_unit)
                     )
                 } else {
                     // Reminder is in the future.
                     let remind_time = reminder_date - now;
                     let (fut_amount, fut_amount_unit) = pretty_duration(remind_time);
                     format!(
-                        "in {} {}s",
+                        "{} in {} {}",
+                        REMINDER.red().bold(),
                         fut_amount.to_string().bold().green(),
-                        fut_amount_unit
+                        pluralize_time_unit(fut_amount, fut_amount_unit)
                     )
                 }
             }
-            MessageType::Regular => {
-                format!("{} {}s ago", amount.to_string().bold().blue(), amount_unit)
-            }
+            MessageType::Todo(completed_date) => format!(
+                "{} {} {} ago",
+                TODO.red().bold(),
+                amount.to_string().bold().blue(),
+                plural_amount_unit
+            ),
+            MessageType::Regular => format!(
+                "{} {} {} ago",
+                NOTE.white().bold(),
+                amount.to_string().bold().blue(),
+                plural_amount_unit
+            ),
         };
 
         let _pretty_date = self.datetime.format("%Y-%m-%d %H:%M").to_string().blue();
         let msg = msg_override.unwrap_or(&self.message).trim();
-        println!("―――――――――――――――――――――――――――――――――");
-        println!("[{}]\n{}", header_string, msg);
-        println!("―――――――――――――――――――――――――――――――――");
+
+        let header = format!("{} #{}", header_string, self.id.to_string().bold());
+        let bar_length = std::cmp::max(
+            msg.lines()
+                .map(|line| count_real_chars(line.trim()).unwrap_or(0))
+                .max()
+                .unwrap_or(0),
+            count_real_chars(header.trim()).unwrap_or(0),
+        );
+
+        print_bar(bar_length);
+        println!("{}", header);
+        println!("{}", msg);
+        print_bar(bar_length);
     }
+}
+
+// TODO: need to add mark completed, delete note, arbitrary grepping for tags on any command
+// TODO: jot reminders -- list all reminders
+// TODO: jot reminder
+// TODO: Add markdown like line splitting.
+
+/// Remove ANSI escape codes and count real graphemes.
+fn count_real_chars(input: &str) -> Option<usize> {
+    Some(
+        std::str::from_utf8(&strip_ansi_escapes::strip(input).ok()?)
+            .ok()?
+            .graphemes(true)
+            .count(),
+    )
 }
 
 /// Stream all the jots from disk.
 fn stream_jots(config: config::Config) -> Result<impl Iterator<Item = JotLine>> {
+    lazy_static! {
+        static ref RE: Regex =
+            Regex::new(r"\[(\d\d\d\d\-\d\d\-\d\dT\d\d:\d\d:\d\d-\d\d:\d\d).*").unwrap();
+    }
     let file = File::open(config.journal_path)?;
     let _buffer = String::new();
     Ok(io::BufReader::new(file)
@@ -151,9 +235,8 @@ fn stream_jots(config: config::Config) -> Result<impl Iterator<Item = JotLine>> 
                     break result;
                 }
 
-                // TODO: move to regex match for date stamp
-                if line?.trim().starts_with('[') {
-                    if !buf.is_empty(){
+                if RE.is_match(line?.trim()) {
+                    if !buf.is_empty() {
                         // We finished reading a jot.
                         let result = parse_note(&header_line, &buf);
                         if result.is_some() {
@@ -171,6 +254,12 @@ fn stream_jots(config: config::Config) -> Result<impl Iterator<Item = JotLine>> 
                 }
                 it.next()?;
             }
+        })
+        // Give each jot a real ID based on its position in the journal.
+        .zip(1..)
+        .map(|(mut jot, index)| {
+            jot.id = index;
+            jot
         }))
 }
 
@@ -183,23 +272,38 @@ fn now() -> String {
 }
 
 /// Return a string for the date tag that is now.
+fn now_todo() -> String {
+    let local: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
+
+    let date_str = local.to_rfc3339();
+    format!(
+        "[{} {} {}]",
+        date_str, TODO_HEADER, TODO_NOT_DONE_PLACEHOLDER
+    )
+}
+
+/// Return a string for the date tag that is now.
 fn now_reminder(time: DateTime<Local>) -> String {
     let local: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
 
     let date_str = local.to_rfc3339();
     let reminder_date_str = time.to_rfc3339();
-    format!("[{} remind on {}]", date_str, reminder_date_str)
+    format!("[{} {} on {}]", date_str, REMIND_HEADER, reminder_date_str)
 }
 
 /// Parse a line in our jot log.
 fn parse_note(header_line: &str, message: &str) -> Option<JotLine> {
-    let re = Regex::new(r"\[(\d\d\d\d\-\d\d\-\d\dT\d\d:\d\d:\d\d-\d\d:\d\d)(.*?)\].*").unwrap();
-    let caps = re.captures(header_line)?;
+    lazy_static! {
+        static ref RE: Regex =
+            Regex::new(r"\[(\d\d\d\d\-\d\d\-\d\dT\d\d:\d\d:\d\d-\d\d:\d\d)(.*?)\].*").unwrap();
+        static ref TAG_RE: Regex = Regex::new(r"@[a-zA-Z][0-9a-zA-Z_]*").unwrap();
+    }
+
+    let caps = RE.captures(header_line)?;
     let date = caps.get(1)?.as_str().trim().to_owned();
     let message_type = caps.get(2).map(|m| m.as_str()).unwrap_or("").trim();
 
-    let tag_regex = Regex::new(r"@[a-zA-Z][0-9a-zA-Z_]*").unwrap();
-    let tags = tag_regex
+    let tags = TAG_RE
         .find_iter(message)
         .map(|tag| tag.as_str().to_owned())
         .collect();
@@ -209,10 +313,15 @@ fn parse_note(header_line: &str, message: &str) -> Option<JotLine> {
         datetime: DateTime::from(parsed_date),
         message: message.to_string(),
         tags,
+        id: 0,
         msg_type: MessageType::from_string(&message_type).unwrap_or(MessageType::Regular),
     })
 }
 
+// bleh editing the headers is annoying, maybe I do want a serialization format or json or
+// something.. no it should be easy to just delete the header line and re-render it.
+// the metadata we need to right is easy
+//
 // TODO: we can provide a list of tags inside the editor that are already in use.
 // TODO: lets just load everything into memory and for todos we can update the reminder
 //       header itself that way you can always re-axmine files.
@@ -221,31 +330,116 @@ fn main() -> Result<()> {
     let matches = App::new("jot")
         .version("0.1")
         .about("jot down quick notes and reminders")
-        .subcommand(SubCommand::with_name("cat").about("cat out the journal"))
+        .subcommand(SubCommand::with_name("cat").about("cat out the journal")
+
+                .arg(
+                    Arg::with_name("TAG")
+                        .short("t")
+                        .long("tag")
+                        .value_name("TAG")
+                        .takes_value(true)
+                        .multiple(true)
+                        .help("Filter by a tag"),
+                )
+                .arg(
+                    Arg::with_name("GREP")
+                        .short("g")
+                        .long("grep")
+                        .value_name("GREP")
+                        .takes_value(true)
+                        .multiple(true)
+                        .help("Filter by contents"),
+                ),
+                    )
         .subcommand(
             SubCommand::with_name("notify")
                 .about("process any notifications, this is meant to be run from cron."),
         )
-        .subcommand(
-            SubCommand::with_name("grep")
-                .about("search the journal")
-                .arg(Arg::with_name("PATTERN").help("regex to grep for")),
-        )
         .subcommand(SubCommand::with_name("tags").about("list all tags"))
-        .subcommand(SubCommand::with_name("down").about("write to the journal"))
+        .subcommand(SubCommand::with_name(TODO).about("write a todo"))
         .subcommand(
-            SubCommand::with_name("reminder")
-                .about("write to the journal")
+            SubCommand::with_name(TODOS)
+                .about("view all todos")
+                .arg(
+                    Arg::with_name("TAG")
+                        .short("t")
+                        .long("tag")
+                        .value_name("TAG")
+                        .takes_value(true)
+                        .multiple(true)
+                        .help("Filter by a tag"),
+                )
+                .arg(
+                    Arg::with_name("GREP")
+                        .short("g")
+                        .long("grep")
+                        .value_name("GREP")
+                        .takes_value(true)
+                        .multiple(true)
+                        .help("Filter by contents"),
+                ),
+        )
+        .subcommand(SubCommand::with_name(NOTE).about("write a note"))
+        .subcommand(
+            SubCommand::with_name(NOTES)
+                .about("view all notes")
+                .arg(
+                    Arg::with_name("TAG")
+                        .short("t")
+                        .long("tag")
+                        .value_name("TAG")
+                        .takes_value(true)
+                        .multiple(true)
+                        .help("Filter by a tag"),
+                )
+                .arg(
+                    Arg::with_name("GREP")
+                        .short("g")
+                        .long("grep")
+                        .value_name("GREP")
+                        .takes_value(true)
+                        .multiple(true)
+                        .help("Filter by contents"),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name(REMINDER)
+                .about("write a reminder")
                 .arg(
                     Arg::with_name("TIME")
                         .multiple(true)
                         .help("set a time for the reminder"),
                 ),
         )
+        .subcommand(
+            SubCommand::with_name(REMINDERS)
+                .about("view all reminders")
+                .arg(
+                    Arg::with_name("TAG")
+                        .short("t")
+                        .long("tag")
+                        .value_name("TAG")
+                        .takes_value(true)
+                        .multiple(true)
+                        .help("Filter by a tag"),
+                )
+                .arg(
+                    Arg::with_name("GREP")
+                        .short("g")
+                        .long("grep")
+                        .value_name("GREP")
+                        .takes_value(true)
+                        .multiple(true)
+                        .help("Filter by contents"),
+                ),
+        )
         .get_matches();
 
-    if let Some(_matches) = matches.subcommand_matches("down") {
+    if let Some(_matches) = matches.subcommand_matches(NOTE) {
         let message = scrawl::new()?;
+        if message.trim().is_empty() {
+            return Ok(());
+        }
 
         let mut file = OpenOptions::new().append(true).open(config.journal_path)?;
         writeln!(file, "{}", now())?;
@@ -256,12 +450,30 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    if let Some(matches) = matches.subcommand_matches("reminder") {
+    if let Some(_matches) = matches.subcommand_matches(TODO) {
+        let message = scrawl::new()?;
+        if message.trim().is_empty() {
+            return Ok(());
+        }
+
+        let mut file = OpenOptions::new().append(true).open(config.journal_path)?;
+        writeln!(file, "{}", now_todo())?;
+        writeln!(file, "{}", message.trim())?;
+        writeln!(file)?;
+        writeln!(file)?;
+
+        return Ok(());
+    }
+
+    if let Some(matches) = matches.subcommand_matches(REMINDER) {
         let time_str = matches.values_of("TIME").unwrap().join(" ");
         let reminder_time =
             time_infer::infer_future_time(&time_str).context("invalid time string")?;
 
         let message = scrawl::new()?;
+        if message.trim().is_empty() {
+            return Ok(());
+        }
 
         let mut file = OpenOptions::new().append(true).open(config.journal_path)?;
         writeln!(file, "{}", now_reminder(reminder_time))?;
@@ -309,35 +521,83 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    if let Some(_matches) = matches.subcommand_matches("cat") {
-        for x in stream_jots(config)? {
-            x.pprint();
-            println!();
-        }
-        return Ok(());
-    }
-
-    if let Some(matches) = matches.subcommand_matches("grep") {
-        let pattern = matches.value_of("PATTERN").unwrap();
-        // TODO: if regex is invalid then escape everything and naive search.
-        let re = Regex::new(pattern).unwrap();
-
+    // Commands for displaying various note types.
+    let read_sub_cmd = vec![NOTES, REMINDERS, TODOS, "cat"]
+        .into_iter()
+        .find(|t| matches.subcommand_matches(t).is_some());
+    if let Some(read_cmd) = read_sub_cmd {
         for jot in stream_jots(config)? {
-            if re.find(&jot.message).is_none() {
-                continue;
+            // See if we need to filter by the message type
+            if read_cmd != "cat" {
+                match jot.msg_type {
+                    MessageType::Regular => {
+                        if read_cmd != NOTES{
+                            continue;
+                        }
+                    }
+
+                    MessageType::Reminder(_) => {
+                        if read_cmd != REMINDERS {
+                            continue;
+                        }
+                    }
+
+                    MessageType::Todo(_) => {
+                        if read_cmd != TODOS {
+                            continue;
+                        }
+                    }
+                }
             }
 
-            // Highlight the found strings.
             let mut msg = jot.message.clone();
-            // We need to go in backwards order to preserve the indices.
-            let found = re
-                .find_iter(&jot.message)
-                .collect::<Vec<_>>()
-                .into_iter()
-                .rev();
-            for m in found {
-                let highlighted = &msg[m.start()..m.end()].to_string().red();
-                msg.replace_range(m.start()..m.end(), &highlighted.to_string());
+            // bleh idk if I like this, we should be able to do a grep or do a tag. -t -g etc.
+            if let Some(sub_matches) = matches.subcommand_matches(read_cmd) {
+                // Skip checks.
+                let tags = sub_matches
+                    .values_of("TAG")
+                    .map(|m| m.collect::<HashSet<&str>>())
+                    .unwrap_or_default();
+
+                if !(tags.is_empty() || tags.iter().all(|tag| jot.tags.contains(*tag))) {
+                    continue;
+                }
+
+                let greps = sub_matches
+                    .values_of("GREP")
+                    .map(|m| {
+                        m.map(|grep| {
+                            let re_attempt = Regex::new(grep);
+                            match re_attempt {
+                                Ok(re) => re,
+                                Err(err) => {
+                                    println!("invalid regex {:?} error={:?}", grep, err);
+                                    std::process::exit(1);
+                                }
+                            }
+                        })
+                            .collect::<Vec<_>>()
+                    })
+                    .unwrap_or_default();
+
+                if !(greps.is_empty() || greps.iter().all(|re| re.find(&jot.message).is_some())) {
+                    continue;
+                } else {
+                    // We did find some grep'd things. Update and highlight our message.
+
+                    // We need to go in backwards order to preserve the indices.
+                    for re in greps {
+                        let found = re
+                            .find_iter(&jot.message)
+                            .collect::<Vec<_>>()
+                            .into_iter()
+                            .rev();
+                        for m in found {
+                            let highlighted = &msg[m.start()..m.end()].to_string().red();
+                            msg.replace_range(m.start()..m.end(), &highlighted.to_string());
+                        }
+                    }
+                }
             }
 
             jot.pprint_with_custom_msg(Some(&msg));
@@ -345,7 +605,9 @@ fn main() -> Result<()> {
         }
         return Ok(());
     }
+
     if let Some(_matches) = matches.subcommand_matches("tags") {
+        // TODO: display how many jots have each tag.
         let tags: HashSet<String> = stream_jots(config)?.flat_map(|jot| jot.tags).collect();
         for tag in tags {
             println!("{}", tag);

@@ -17,7 +17,11 @@ Edit `$HOME/.config/jot/config/toml` and give it a valid path to your journal.tx
 
 Make a note:
 
-    jot down
+    jot note
+
+Make a todo:
+
+    jot todo
 
 Make a reminder, note you need to setup notifications first:
 
