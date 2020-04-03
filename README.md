@@ -57,6 +57,10 @@ View all todos:
 
     jot todos
 
+Complete a todo:
+
+    jot complete 4
+
 View all reminders:
 
     jot reminders
