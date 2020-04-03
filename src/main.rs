@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate lazy_static;
 
+use tempfile::NamedTempFile;
+
 use notify_rust::Notification;
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -20,6 +22,17 @@ use std::io::{self, BufRead};
 mod config;
 mod time_infer;
 
+// TODO:
+// steps for writing to the log (that aren't safely appending)
+// create lock file? Nah we can't lol too risk
+// write it out to a temporary filesystem, check to make sure it hasn't changed, mv the temp file
+// over the journal.txt file
+// we should add ability to edit note contents too.
+// jot edit 4
+// jot complete 54 // works on reminders, todos, periodic reminders
+// if we are marking a line as complete
+// shit we need a way to easily write out and then read in a thing.
+
 #[derive(Debug, Eq, PartialEq, Clone)]
 enum MessageType {
     Regular, // [date]
@@ -28,8 +41,8 @@ enum MessageType {
     Reminder(DateTime<Local>), // [date reminder due-date]
 
     // Start date, period, period time unit.
-    // e.g. "starting X date, every 2 weeks BLAH"
-    //ReoccuringReminder(DateTime<FixedOffset>, usize, PeriodTimeUnit),
+    // e.g. "starting X date, every 2 weeks BLAH" last element is the cancelled time.
+    //ReoccuringReminder(DateTime<FixedOffset>, usize, PeriodTimeUnit, Option<DateTime<Local>>),
 
     // e.g. "mark this date as Fred's birthday"
     //DateMarker(DateTime<FixedOffset>),
@@ -100,11 +113,31 @@ fn pretty_duration<'a>(time_difference: chrono::Duration) -> (i64, &'a str) {
     (amount, amount_unit)
 }
 
+#[test]
+fn test_pretty_duration() {
+    assert_eq!(pretty_duration(chrono::Duration::seconds(1)), (1, "second"));
+    assert_eq!(
+        pretty_duration(chrono::Duration::seconds(124)),
+        (2, "minute")
+    );
+    assert_eq!(pretty_duration(chrono::Duration::minutes(64)), (1, "hour"));
+    assert_eq!(pretty_duration(chrono::Duration::hours(54)), (2, "day"));
+    assert_eq!(pretty_duration(chrono::Duration::days(10)), (1, "week"));
+    assert_eq!(pretty_duration(chrono::Duration::days(365)), (52, "week"));
+}
+
 fn pluralize_time_unit(amount: i64, time_unit: &str) -> String {
     if amount == 1 {
         return time_unit.to_string();
     }
     return format!("{}s", time_unit);
+}
+
+#[test]
+fn test_pluralize_time_unit() {
+    assert_eq!(pluralize_time_unit(1, "day"), "day");
+    assert_eq!(pluralize_time_unit(2, "day"), "days");
+    assert_eq!(pluralize_time_unit(-2, "minute"), "minutes");
 }
 
 fn print_bar(size: usize) {
@@ -116,12 +149,25 @@ fn print_bar(size: usize) {
 struct JotLine {
     datetime: DateTime<Local>,
     message: String,
-    tags: HashSet<String>,
     msg_type: MessageType,
+    // TODO: These two fields aren't needed for creating new jots but are only when it is read.
+    //       Maybe we should make a ReadJot super type?
     id: usize,
+    tags: HashSet<String>,
 }
 
 impl JotLine {
+    fn new(message: &str, message_type: MessageType) -> JotLine {
+        let local: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
+
+        JotLine {
+            datetime: local,
+            message: message.to_string(),
+            msg_type: message_type,
+            id: 0,
+            tags: HashSet::new(),
+        }
+    }
     fn pprint(&self) {
         self.pprint_with_custom_msg(None);
     }
@@ -159,12 +205,24 @@ impl JotLine {
                     )
                 }
             }
-            MessageType::Todo(completed_date) => format!(
+            MessageType::Todo(None) => format!(
                 "{} {} {} ago",
                 TODO.red().bold(),
                 amount.to_string().bold().blue(),
                 plural_amount_unit
             ),
+            MessageType::Todo(Some(completed_date)) => {
+                let time_difference = now - completed_date;
+                let (amount, amount_unit) = pretty_duration(time_difference);
+                let plural_amount_unit = pluralize_time_unit(amount, amount_unit);
+
+                format!(
+                    "{} completed {} {} ago",
+                    TODO.white().bold(),
+                    amount.to_string().bold().blue(),
+                    plural_amount_unit
+                )
+            }
             MessageType::Regular => format!(
                 "{} {} {} ago",
                 NOTE.white().bold(),
@@ -190,12 +248,32 @@ impl JotLine {
         println!("{}", msg);
         print_bar(bar_length);
     }
-}
 
-// TODO: need to add mark completed, delete note, arbitrary grepping for tags on any command
-// TODO: jot reminders -- list all reminders
-// TODO: jot reminder
-// TODO: Add markdown like line splitting.
+    /// Write out the header string for this particular note.
+    fn write_to_header_string(&self) -> String {
+        let date_str = self.datetime.to_rfc3339();
+
+        match self.msg_type {
+            MessageType::Regular => format!("[{}]", date_str),
+
+            MessageType::Reminder(reminder_date) => {
+                let reminder_date_str = reminder_date.to_rfc3339();
+                format!("[{} {} on {}]", date_str, REMIND_HEADER, reminder_date_str)
+            }
+
+            MessageType::Todo(maybe_completed_date) => {
+                let completed_str = maybe_completed_date
+                    .map(|date| date.to_rfc3339())
+                    .unwrap_or(TODO_NOT_DONE_PLACEHOLDER.to_string());
+                format!("[{} {} {}]", date_str, TODO_HEADER, completed_str)
+            }
+        }
+    }
+
+    fn to_string(&self) -> String {
+        format!("{}\n{}", self.write_to_header_string(), self.message)
+    }
+}
 
 /// Remove ANSI escape codes and count real graphemes.
 fn count_real_chars(input: &str) -> Option<usize> {
@@ -263,34 +341,6 @@ fn stream_jots(config: config::Config) -> Result<impl Iterator<Item = JotLine>> 
         }))
 }
 
-/// Return a string for the date tag that is now.
-fn now() -> String {
-    let local: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
-
-    let date_str = local.to_rfc3339();
-    format!("[{}]", date_str)
-}
-
-/// Return a string for the date tag that is now.
-fn now_todo() -> String {
-    let local: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
-
-    let date_str = local.to_rfc3339();
-    format!(
-        "[{} {} {}]",
-        date_str, TODO_HEADER, TODO_NOT_DONE_PLACEHOLDER
-    )
-}
-
-/// Return a string for the date tag that is now.
-fn now_reminder(time: DateTime<Local>) -> String {
-    let local: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
-
-    let date_str = local.to_rfc3339();
-    let reminder_date_str = time.to_rfc3339();
-    format!("[{} {} on {}]", date_str, REMIND_HEADER, reminder_date_str)
-}
-
 /// Parse a line in our jot log.
 fn parse_note(header_line: &str, message: &str) -> Option<JotLine> {
     lazy_static! {
@@ -329,9 +379,10 @@ fn main() -> Result<()> {
     let config = config::load_config()?;
     let matches = App::new("jot")
         .version("0.1")
-        .about("jot down quick notes and reminders")
-        .subcommand(SubCommand::with_name("cat").about("cat out the journal")
-
+        .about("Jot down quick notes and reminders")
+        .subcommand(
+            SubCommand::with_name("cat")
+                .about("Dump out the entire journal")
                 .arg(
                     Arg::with_name("TAG")
                         .short("t")
@@ -350,13 +401,17 @@ fn main() -> Result<()> {
                         .multiple(true)
                         .help("Filter by contents"),
                 ),
-                    )
+        )
         .subcommand(
             SubCommand::with_name("notify")
-                .about("process any notifications, this is meant to be run from cron."),
+                .about("Process any notifications, this is meant to be run from cron."),
         )
-        .subcommand(SubCommand::with_name("tags").about("list all tags"))
-        .subcommand(SubCommand::with_name(TODO).about("write a todo"))
+        .subcommand(
+            SubCommand::with_name("daemon")
+                .about("Periodically check to see if we need to dump out notifications."),
+        )
+        .subcommand(SubCommand::with_name("tags").about("List all tags"))
+        .subcommand(SubCommand::with_name(TODO).about("Write a todo"))
         .subcommand(
             SubCommand::with_name(TODOS)
                 .about("view all todos")
@@ -379,7 +434,7 @@ fn main() -> Result<()> {
                         .help("Filter by contents"),
                 ),
         )
-        .subcommand(SubCommand::with_name(NOTE).about("write a note"))
+        .subcommand(SubCommand::with_name(NOTE).about("Write a note"))
         .subcommand(
             SubCommand::with_name(NOTES)
                 .about("view all notes")
@@ -408,7 +463,17 @@ fn main() -> Result<()> {
                 .arg(
                     Arg::with_name("TIME")
                         .multiple(true)
-                        .help("set a time for the reminder"),
+                        .help("Set a time for the reminder"),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name("complete")
+                .about("Complete a todo")
+                .arg(
+                    Arg::with_name("NUMBER")
+                        .value_name("NUMBER")
+                        .takes_value(true)
+                        .help("The note number"),
                 ),
         )
         .subcommand(
@@ -442,8 +507,9 @@ fn main() -> Result<()> {
         }
 
         let mut file = OpenOptions::new().append(true).open(config.journal_path)?;
-        writeln!(file, "{}", now())?;
-        writeln!(file, "{}", message.trim())?;
+
+        let jot = JotLine::new(message.trim(), MessageType::Regular);
+        writeln!(file, "{}", jot.to_string())?;
         writeln!(file)?;
         writeln!(file)?;
 
@@ -457,8 +523,9 @@ fn main() -> Result<()> {
         }
 
         let mut file = OpenOptions::new().append(true).open(config.journal_path)?;
-        writeln!(file, "{}", now_todo())?;
-        writeln!(file, "{}", message.trim())?;
+
+        let jot = JotLine::new(message.trim(), MessageType::Todo(None));
+        writeln!(file, "{}", jot.to_string())?;
         writeln!(file)?;
         writeln!(file)?;
 
@@ -476,12 +543,105 @@ fn main() -> Result<()> {
         }
 
         let mut file = OpenOptions::new().append(true).open(config.journal_path)?;
-        writeln!(file, "{}", now_reminder(reminder_time))?;
-        writeln!(file, "{}", message.trim())?;
+        let jot = JotLine::new(message.trim(), MessageType::Reminder(reminder_time));
+        writeln!(file, "{}", jot.to_string())?;
         writeln!(file)?;
         writeln!(file)?;
 
         return Ok(());
+    }
+
+    if let Some(matches) = matches.subcommand_matches("complete") {
+        match matches.value_of("NUMBER").unwrap().parse::<usize>() {
+            Ok(number_to_complete) => {
+                let mut tmp_file = NamedTempFile::new()?;
+
+                // Read in the entire file Jot file and stream them to a temp file.
+                for new_jot in stream_jots(config.clone())?.map(|jot| {
+                    if jot.id == number_to_complete {
+                        match jot.msg_type {
+                            MessageType::Todo(_) => {
+                                let mut new_jot = jot.clone();
+                                let now: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
+                                new_jot.msg_type = MessageType::Todo(Some(now));
+                                new_jot
+                            }
+
+                            _ => {
+                                println!("you can only complete a todo");
+                                std::process::exit(1)
+                            }
+                        }
+                    } else {
+                        jot
+                    }
+                }) {
+                    // Write out the stream of jots to the new temp file
+                    writeln!(tmp_file, "{}", new_jot.to_string())?;
+                    writeln!(tmp_file)?;
+                    writeln!(tmp_file)?;
+                }
+
+                // Now we move the temp file over the journal.
+                std::fs::copy(tmp_file.path(), config.journal_path)?;
+            }
+            Err(_) => {
+                println!("invalid note number");
+                std::process::exit(1)
+            }
+        }
+        return Ok(());
+    }
+
+    if let Some(_matches) = matches.subcommand_matches("daemon") {
+        loop {
+            let notified = config::load_notified()?;
+
+            let now: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
+
+            for jot in stream_jots(config.clone())? {
+                if let MessageType::Reminder(remind_time) = jot.msg_type {
+                    // If the notification is too far in the past.
+                    if now - jot.datetime > chrono::Duration::days(1) {
+                        continue;
+                    }
+
+                    // If we already notified about this one.
+                    if notified.contains(&jot.datetime) {
+                        continue;
+                    }
+
+                    // BUT if we are within X seconds of it lets just wait then notify.
+                    if now - remind_time < chrono::Duration::seconds(60) {
+                        match (now - remind_time).to_std() {
+                            Ok(duration) => std::thread::sleep(duration),
+                            Err(_) => {
+                                continue;
+                            }
+                        }
+                    } else {
+                        // We have to be at least past the point of the reminder.
+                        if remind_time - now > chrono::Duration::seconds(0) {
+                            continue;
+                        }
+                    }
+
+                    println!("we got a reminder!");
+
+                    Notification::new()
+                        .summary("jot")
+                        .body(&jot.message)
+                        .show()
+                        .unwrap();
+
+                    // Mark it as notified.
+                    config::mark_notified(jot.datetime)?;
+                }
+            }
+
+            let one_minute = std::time::Duration::from_millis(1000);
+            std::thread::sleep(one_minute);
+        }
     }
 
     if let Some(_matches) = matches.subcommand_matches("notify") {
@@ -531,7 +691,7 @@ fn main() -> Result<()> {
             if read_cmd != "cat" {
                 match jot.msg_type {
                     MessageType::Regular => {
-                        if read_cmd != NOTES{
+                        if read_cmd != NOTES {
                             continue;
                         }
                     }
@@ -576,7 +736,7 @@ fn main() -> Result<()> {
                                 }
                             }
                         })
-                            .collect::<Vec<_>>()
+                        .collect::<Vec<_>>()
                     })
                     .unwrap_or_default();
 
