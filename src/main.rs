@@ -151,7 +151,7 @@ impl JotLine {
 
         JotLine {
             datetime: local,
-            message: message.to_string(),
+            message: message.trim().to_string(),
             msg_type: message_type,
             id: 0,
             tags: HashSet::new(),
@@ -350,7 +350,7 @@ fn parse_note(header_line: &str, message: &str) -> Option<JotLine> {
     let parsed_date: DateTime<FixedOffset> = DateTime::parse_from_rfc3339(&date).ok()?;
     Some(JotLine {
         datetime: DateTime::from(parsed_date),
-        message: message.to_string(),
+        message: message.trim().to_string(),
         tags,
         id: 0,
         msg_type: MessageType::from_string(&message_type).unwrap_or(MessageType::Note),
