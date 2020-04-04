@@ -29,29 +29,21 @@ reminders (note you only get 1 minute resolution):
 
 ## Usage
 
+### Notes
+
 Make a note:
 
     jot note
 
-Make a todo:
-
-    jot todo
-
-Make a reminder, note you need to setup notifications first:
-
-    jot reminder in 10 minutes
-
-List tags:
-
-    jot tags
-
-Dump everything:
-
-    jot cat
-
 View all notes:
 
     jot notes
+
+### Todos
+
+Make a todo:
+
+    jot todo
 
 View all todos:
 
@@ -61,9 +53,42 @@ Complete a todo:
 
     jot complete 4
 
+
+### Reminders
+
+Make a reminder, note you need to setup notifications first:
+
+    jot reminder in 10 minutes
+    jot reminder sunday at noon
+    jot reminder monday morning
+    jot reminder tomorrow morning
+    jot reminder Monday
+    jot reminder Wed at 10
+    jot reminder on sun at 10pm
+    jot reminder sun 10:30pm
+    jot reminder at 10:30pm
+    jot reminder at noon
+    jot reminder noon
+
 View all reminders:
 
     jot reminders
+
+
+### Tags
+
+Any note/todo/reminder can have tags, a tag is just a word preceeded by
+the `@` symbol.
+
+List tags:
+
+    jot tags
+
+### Other
+
+Dump everything:
+
+    jot cat
 
 Filter any of the view commands by tags:
 

@@ -22,20 +22,9 @@ use std::io::{self, BufRead};
 mod config;
 mod time_infer;
 
-// TODO:
-// steps for writing to the log (that aren't safely appending)
-// create lock file? Nah we can't lol too risk
-// write it out to a temporary filesystem, check to make sure it hasn't changed, mv the temp file
-// over the journal.txt file
-// we should add ability to edit note contents too.
-// jot edit 4
-// jot complete 54 // works on reminders, todos, periodic reminders
-// if we are marking a line as complete
-// shit we need a way to easily write out and then read in a thing.
-
 #[derive(Debug, Eq, PartialEq, Clone)]
 enum MessageType {
-    Regular, // [date]
+    Note,
 
     // Due date.
     Reminder(DateTime<Local>), // [date reminder due-date]
@@ -86,7 +75,7 @@ impl MessageType {
                     Some(MessageType::Todo(Some(DateTime::from(parsed_date))))
                 }
             }
-            _ => Some(MessageType::Regular),
+            _ => Some(MessageType::Note),
         }
     }
 }
@@ -223,7 +212,7 @@ impl JotLine {
                     plural_amount_unit
                 )
             }
-            MessageType::Regular => format!(
+            MessageType::Note => format!(
                 "{} {} {} ago",
                 NOTE.white().bold(),
                 amount.to_string().bold().blue(),
@@ -254,7 +243,7 @@ impl JotLine {
         let date_str = self.datetime.to_rfc3339();
 
         match self.msg_type {
-            MessageType::Regular => format!("[{}]", date_str),
+            MessageType::Note => format!("[{}]", date_str),
 
             MessageType::Reminder(reminder_date) => {
                 let reminder_date_str = reminder_date.to_rfc3339();
@@ -364,17 +353,10 @@ fn parse_note(header_line: &str, message: &str) -> Option<JotLine> {
         message: message.to_string(),
         tags,
         id: 0,
-        msg_type: MessageType::from_string(&message_type).unwrap_or(MessageType::Regular),
+        msg_type: MessageType::from_string(&message_type).unwrap_or(MessageType::Note),
     })
 }
 
-// bleh editing the headers is annoying, maybe I do want a serialization format or json or
-// something.. no it should be easy to just delete the header line and re-render it.
-// the metadata we need to right is easy
-//
-// TODO: we can provide a list of tags inside the editor that are already in use.
-// TODO: lets just load everything into memory and for todos we can update the reminder
-//       header itself that way you can always re-axmine files.
 fn main() -> Result<()> {
     let config = config::load_config()?;
     let matches = App::new("jot")
@@ -508,7 +490,7 @@ fn main() -> Result<()> {
 
         let mut file = OpenOptions::new().append(true).open(config.journal_path)?;
 
-        let jot = JotLine::new(message.trim(), MessageType::Regular);
+        let jot = JotLine::new(message.trim(), MessageType::Note);
         writeln!(file, "{}", jot.to_string())?;
         writeln!(file)?;
         writeln!(file)?;
@@ -690,7 +672,7 @@ fn main() -> Result<()> {
             // See if we need to filter by the message type
             if read_cmd != "cat" {
                 match jot.msg_type {
-                    MessageType::Regular => {
+                    MessageType::Note => {
                         if read_cmd != NOTES {
                             continue;
                         }
