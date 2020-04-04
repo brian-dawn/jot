@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use chrono::prelude::*;
 
 fn time_from_now(parts: &Vec<&str>) -> Option<DateTime<Local>> {
@@ -152,7 +153,9 @@ fn just_time(parts: &Vec<&str>, now: DateTime<Local>) -> Option<DateTime<Local>>
 
 pub fn infer_future_time(input: &str) -> Option<DateTime<Local>> {
     let now: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
-
+    infer_future_time_from_datetime(input, now)
+}
+fn infer_future_time_from_datetime(input: &str, now: DateTime<Local>) -> Option<DateTime<Local>> {
     let mut cleaned = String::new();
     cleaned.push_str(" ");
     cleaned.push_str(input);
@@ -169,7 +172,7 @@ pub fn infer_future_time(input: &str) -> Option<DateTime<Local>> {
 
     let parts = cleaned.split_whitespace().collect::<Vec<_>>();
 
-    let time_from_now = time_from_now(&parts);
+    let time_from_now = time_from_date(&parts, now);
     if time_from_now.is_some() {
         return time_from_now;
     }
@@ -181,4 +184,45 @@ pub fn infer_future_time(input: &str) -> Option<DateTime<Local>> {
 
     // TODO this can create reminders in the past. Should shove to next day.
     return just_time(&parts, now);
+}
+
+#[test]
+fn test_infer_future_time() -> Result<()> {
+    let parse = |i: &str| -> DateTime<Local> {
+        let parsed_date: DateTime<FixedOffset> = DateTime::parse_from_rfc3339(&i).unwrap();
+        let now: DateTime<Local> = DateTime::from(parsed_date);
+        now
+    };
+    let now_str = "2020-04-04T10:30:00-05:00";
+    let now = parse(now_str);
+
+    assert_eq!(
+        Some(now + chrono::Duration::hours(1)),
+        infer_future_time_from_datetime("in 1 hour", now)
+    );
+    assert_eq!(
+        Some(parse("2020-04-06T00:00:00-05:00")),
+        infer_future_time_from_datetime("monday", now)
+    );
+
+    assert_eq!(
+        Some(parse("2020-04-06T13:00:00-05:00")),
+        infer_future_time_from_datetime("monday at 1", now)
+    );
+
+    assert_eq!(
+        Some(parse("2020-04-06T01:00:00-05:00")),
+        infer_future_time_from_datetime("monday at 1am", now)
+    );
+
+    assert_eq!(
+        Some(parse("2020-04-06T01:45:00-05:00")),
+        infer_future_time_from_datetime("monday at 1:45am", now)
+    );
+
+    assert_eq!(
+        Some(parse("2020-04-10T12:00:00-05:00")),
+        infer_future_time_from_datetime("friday at noon", now)
+    );
+    Ok(())
 }
