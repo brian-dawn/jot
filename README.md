@@ -99,4 +99,7 @@ Grep any of the view commands:
     jot todos -g birthday
     jot cat -g "foo.*?bar"
 
+Edit a note/todo/reminder:
+
+    jot edit 14
 

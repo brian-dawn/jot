@@ -449,6 +449,16 @@ fn main() -> Result<()> {
                 ),
         )
         .subcommand(
+            SubCommand::with_name("edit")
+                .about("Edit the contents of a note/todo/reminder")
+                .arg(
+                    Arg::with_name("NUMBER")
+                        .value_name("NUMBER")
+                        .takes_value(true)
+                        .help("The note number"),
+                ),
+        )
+        .subcommand(
             SubCommand::with_name("complete")
                 .about("Complete a todo")
                 .arg(
@@ -533,6 +543,43 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
+    if let Some(matches) = matches.subcommand_matches("edit") {
+        match matches.value_of("NUMBER").unwrap().parse::<usize>() {
+            Ok(number_to_complete) => {
+                let mut tmp_file = NamedTempFile::new()?;
+
+                // Read in the entire file Jot file and stream them to a temp file.
+                for new_jot in stream_jots(config.clone())?.map(|jot| {
+                    if jot.id == number_to_complete {
+                        let message = scrawl::with(&jot.message.trim()).unwrap();
+
+                        if message.trim().is_empty() {
+                            jot
+                        } else {
+                            let mut new_jot = jot.clone();
+                            new_jot.message = message;
+                            new_jot
+                        }
+                    } else {
+                        jot
+                    }
+                }) {
+                    // Write out the stream of jots to the new temp file
+                    writeln!(tmp_file, "{}", new_jot.to_string())?;
+                    writeln!(tmp_file)?;
+                    writeln!(tmp_file)?;
+                }
+
+                // Now we move the temp file over the journal.
+                std::fs::copy(tmp_file.path(), config.journal_path)?;
+            }
+            Err(_) => {
+                println!("invalid note number");
+                std::process::exit(1)
+            }
+        }
+        return Ok(());
+    }
     if let Some(matches) = matches.subcommand_matches("complete") {
         match matches.value_of("NUMBER").unwrap().parse::<usize>() {
             Ok(number_to_complete) => {
