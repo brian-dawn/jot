@@ -798,12 +798,6 @@ fn main() -> Result<()> {
     }
 
     if let Some(_matches) = matches.subcommand_matches("tags") {
-        // TODO: display how many jots have each tag.
-        //let tags: HashSet<String> = stream_jots(config)?.flat_map(|jot| jot.tags).collect();
-        //for tag in tags {
-        //    println!("{}", tag);
-        //}
-
         let mut all_tags = HashSet::new();
         let mut notes = HashMap::new();
         let mut remns = HashMap::new();
