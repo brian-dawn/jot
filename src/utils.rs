@@ -70,17 +70,9 @@ fn test_count_real_chars() {
 /// We will also render newlines similarly to how markdown does it.
 pub fn break_apart_long_string(st: &str) -> String {
     let term = console::Term::stdout();
-    let (width, _height) = term.size();
+    let (_height, width) = term.size();
 
     let ideal_split_point = width - 4;
 
-    // TODO: lets not attempt this for now, maybe a markdown renderer exists we can use
-    // Double newline counts as one newline, single newline counts as nothing.
-    //let tmp = st
-    //.replace("\n\n", "$><!")
-    //.replace("\n", " ")
-    //.replace("$><!", "\n")
-    //    .replace("\n ", "\n");
-    //format!("{}", textwrap::fill(&tmp, ideal_split_point as usize))
     format!("{}", textwrap::fill(st, ideal_split_point as usize))
 }
