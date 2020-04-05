@@ -12,7 +12,7 @@ Create `$HOME/.config/jot/config.toml` by running:
 
     jot
 
-Edit `$HOME/.config/jot/config/toml` and give it a valid path to your journal.txt (you'll have to create it for now, absolute paths please).
+Edit `$HOME/.config/jot/config.toml` and give it a valid path to your journal.txt (you'll have to create it for now, absolute paths please).
 
 ## MacOS Users
 
