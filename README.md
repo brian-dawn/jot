@@ -4,15 +4,23 @@ Hosted on [SourceHut](https://git.sr.ht/~brian-dawn/jot) but also hosted on [Git
 
 ## Install
 
-Install with:
+If you don't have Rust installed click [here](https://rustup.rs/).
 
-    cargo install --path . --force
+Build and install with:
+
+    cargo install --path .
 
 Create `$HOME/.config/jot/config.toml` by running:
 
     jot
 
 Edit `$HOME/.config/jot/config.toml` and give it a valid path to your journal.txt (you'll have to create it for now, absolute paths please).
+
+My config looks like this:
+
+```
+journal_path = "/Users/brian/Sync/journal.txt"
+```
 
 ## MacOS Users
 
