@@ -1,4 +1,3 @@
-
 /// Given a duration, return a tuple of (scalar, time-unit).
 /// This function attempts to round far away times to the nearest large
 /// unit (naively implemented so it doesn't exactly behave that way).
@@ -59,7 +58,6 @@ pub fn count_real_chars(input: &str) -> Option<usize> {
 
 #[test]
 fn test_count_real_chars() {
-
     assert_eq!(count_real_chars("hello"), Some(5));
     assert_eq!(count_real_chars("hello"), Some(5));
     assert_eq!(count_real_chars("     "), Some(5));
