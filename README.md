@@ -10,13 +10,14 @@ Build and install with:
 
     cargo install --path .
 
-Create `$HOME/.config/jot/config.toml` by running (or make it yourself):
+Initialize jot by running:
 
     jot
 
-Edit `$HOME/.config/jot/config.toml` and give it a valid path to your journal.txt (you'll have to create it for now, absolute paths please).
+If you want to customize where the journal file lives
+edit `$HOME/.config/jot/config.toml` and give it a valid path to your journal.txt (you'll have to create it for now, absolute paths please). 
 
-My config looks like this:
+I like putting my journal in a Syncthing folder so my config looks like this:
 
 ```
 journal_path = "/Users/brian/Sync/journal.txt"
@@ -24,7 +25,7 @@ journal_path = "/Users/brian/Sync/journal.txt"
 
 ## MacOS Users
 
-Macos users already have a `jot` command installed. Make sure
+MacOS users already have a `jot` command installed. Make sure
 `~/.cargo/bin` is in your `$PATH` or add the following to `.bashrc`:
 
     source $HOME/.cargo/env
