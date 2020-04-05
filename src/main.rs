@@ -234,27 +234,6 @@ impl JotLine {
             count_real_chars(header.trim()).unwrap_or(0),
         );
 
-        use prettytable::{format, Cell, Row, Table};
-        let mut table = table!([header]);
-        table.set_format(
-            format::FormatBuilder::new()
-                .column_separator('│')
-                .borders('│')
-                .separators(
-                    &[format::LinePosition::Top],
-                    format::LineSeparator::new('─', '┬', '┌', '┐'),
-                )
-                .separators(
-                    &[format::LinePosition::Intern],
-                    format::LineSeparator::new('─', '┼', '├', '┤'),
-                )
-                .separators(
-                    &[format::LinePosition::Bottom],
-                    format::LineSeparator::new('─', '┴', '└', '┘'),
-                )
-                .padding(1, 1)
-                .build(),
-        );
 
         let header_chars = count_real_chars(&header).unwrap_or(0);
         let s_header = std::iter::repeat("─")
@@ -264,15 +243,13 @@ impl JotLine {
         let s = std::iter::repeat("─")
             .take(count_real_chars(&s_header).unwrap_or(0) + header_chars )
             .collect::<String>();
-        //table.printstd();
-        //
-        //
 
-        println!("{}{}{}{}", '┌', header, s_header, '┐');
-        println!("{}", msg);
-
-        println!("{}{}{}", '└', s, '┘');
+        println!("{}{}{}{}", "┌─", header, s_header, "─┐");
+        // TODO: I can't tell if I prefer the spacers or not
         println!("");
+        println!("{}", msg);
+        println!("");
+        println!("{}{}{}", "└─", s, "─┘");
     }
 
     /// Write out the header string for this particular note.
