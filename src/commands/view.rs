@@ -32,7 +32,7 @@ pub fn display(config: Config, read_cmd: &str, matches: clap::ArgMatches) -> Res
             }
         }
 
-        let mut msg = jot.message.clone();
+        let mut msg = crate::utils::break_apart_long_string(&jot.message.clone());
         if let Some(sub_matches) = matches.subcommand_matches(read_cmd) {
             // Skip checks.
             let tags = sub_matches
