@@ -1,5 +1,7 @@
 # jot
 
+Hosted on [SourceHut](https://git.sr.ht/~brian-dawn/jot) but also hosted on [Github](https://github.com/brian-dawn/jot) for convenience. 
+
 ## Install
 
 Install with:
