@@ -1,15 +1,11 @@
-
-
-use anyhow::{Result};
+use anyhow::Result;
 use chrono::prelude::*;
-
 
 use colorful::Colorful;
 use itertools::Itertools;
 use regex::Regex;
-use std::collections::{HashSet};
+use std::collections::HashSet;
 use std::fs::File;
-
 
 use std::io::{self, BufRead};
 
@@ -166,9 +162,12 @@ impl JotLine {
             }
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
-        format!("{}\n{}", self.write_to_header_string(), self.message)
+impl std::fmt::Display for JotLine {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let st = format!("{}\n{}", self.write_to_header_string(), self.message);
+        write!(f, "{}", &st)
     }
 }
 
