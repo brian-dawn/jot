@@ -1,10 +1,4 @@
-use anyhow::{Context, Result};
 use chrono::prelude::*;
-
-fn time_from_now(parts: &Vec<&str>) -> Option<DateTime<Local>> {
-    let now: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
-    time_from_date(parts, now)
-}
 
 /// 1 day, 3 seconds, 2 seconds from now
 fn time_from_date(parts: &Vec<&str>, datetime: DateTime<Local>) -> Option<DateTime<Local>> {
@@ -187,7 +181,7 @@ fn infer_future_time_from_datetime(input: &str, now: DateTime<Local>) -> Option<
 }
 
 #[test]
-fn test_infer_future_time() -> Result<()> {
+fn test_infer_future_time() -> anyhow::Result<()> {
     let parse = |i: &str| -> DateTime<Local> {
         let parsed_date: DateTime<FixedOffset> = DateTime::parse_from_rfc3339(&i).unwrap();
         let now: DateTime<Local> = DateTime::from(parsed_date);

@@ -131,10 +131,6 @@ fn test_pluralize_time_unit() {
     assert_eq!(pluralize_time_unit(-2, "minute"), "minutes");
 }
 
-fn print_bar(size: usize) {
-    let s = std::iter::repeat("―").take(size).collect::<String>();
-    println!("{}", s);
-}
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 struct JotLine {
@@ -158,9 +154,6 @@ impl JotLine {
             id: 0,
             tags: HashSet::new(),
         }
-    }
-    fn pprint(&self) {
-        self.pprint_with_custom_msg(None);
     }
 
     /// Pretty print a Jot, we need to support custom messages for
@@ -846,7 +839,7 @@ fn main() -> Result<()> {
             }
         }
 
-        use prettytable::{format, Cell, Row, Table};
+        use prettytable::{format, Cell, Table};
         let mut table = Table::new();
         let format = format::FormatBuilder::new()
             .separators(&[], format::LineSeparator::new('-', '+', '+', '+'))
