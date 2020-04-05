@@ -401,7 +401,7 @@ fn main() -> Result<()> {
         .subcommand(SubCommand::with_name(TODO).about("Write a todo"))
         .subcommand(
             SubCommand::with_name(TODOS)
-                .about("view all todos")
+                .about("View all todos")
                 .arg(
                     Arg::with_name("TAG")
                         .short("t")
@@ -424,7 +424,7 @@ fn main() -> Result<()> {
         .subcommand(SubCommand::with_name(NOTE).about("Write a note"))
         .subcommand(
             SubCommand::with_name(NOTES)
-                .about("view all notes")
+                .about("View all notes")
                 .arg(
                     Arg::with_name("TAG")
                         .short("t")
@@ -475,7 +475,7 @@ fn main() -> Result<()> {
         )
         .subcommand(
             SubCommand::with_name(REMINDERS)
-                .about("view all reminders")
+                .about("View all reminders")
                 .arg(
                     Arg::with_name("TAG")
                         .short("t")
