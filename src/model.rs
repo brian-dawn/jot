@@ -14,7 +14,7 @@ use super::constants::*;
 use super::utils::{count_real_chars, pluralize_time_unit, pretty_duration};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct JotLine {
+pub struct Jot {
     pub datetime: DateTime<Local>,
     pub message: String,
     pub msg_type: MessageType,
@@ -42,11 +42,11 @@ pub enum MessageType {
     Todo(Option<DateTime<Local>>),
 }
 
-impl JotLine {
-    pub fn new(message: &str, message_type: MessageType) -> JotLine {
+impl Jot {
+    pub fn new(message: &str, message_type: MessageType) -> Jot {
         let local: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
 
-        JotLine {
+        Jot {
             datetime: local,
             message: message.trim().to_string(),
             msg_type: message_type,
@@ -164,7 +164,7 @@ impl JotLine {
     }
 }
 
-impl std::fmt::Display for JotLine {
+impl std::fmt::Display for Jot {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let st = format!("{}\n{}", self.write_to_header_string(), self.message);
         write!(f, "{}", &st)
@@ -199,7 +199,7 @@ impl MessageType {
 }
 
 /// Stream all the jots from disk.
-pub fn stream_jots(config: config::Config) -> Result<impl Iterator<Item = JotLine>> {
+pub fn stream_jots(config: config::Config) -> Result<impl Iterator<Item = Jot>> {
     lazy_static! {
         static ref RE: Regex =
             Regex::new(r"\[(\d\d\d\d\-\d\d\-\d\dT\d\d:\d\d:\d\d-\d\d:\d\d).*").unwrap();
@@ -255,7 +255,7 @@ pub fn stream_jots(config: config::Config) -> Result<impl Iterator<Item = JotLin
 }
 
 /// Parse a line in our jot log.
-fn parse_note(header_line: &str, message: &str) -> Option<JotLine> {
+fn parse_note(header_line: &str, message: &str) -> Option<Jot> {
     lazy_static! {
         static ref RE: Regex =
             Regex::new(r"\[(\d\d\d\d\-\d\d\-\d\dT\d\d:\d\d:\d\d-\d\d:\d\d)(.*?)\].*").unwrap();
@@ -272,7 +272,7 @@ fn parse_note(header_line: &str, message: &str) -> Option<JotLine> {
         .collect();
 
     let parsed_date: DateTime<FixedOffset> = DateTime::parse_from_rfc3339(&date).ok()?;
-    Some(JotLine {
+    Some(Jot {
         datetime: DateTime::from(parsed_date),
         message: message.trim().to_string(),
         tags,

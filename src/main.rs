@@ -7,7 +7,6 @@ use tempfile::NamedTempFile;
 
 use notify_rust::Notification;
 
-
 use anyhow::{Context, Result};
 use chrono::prelude::*;
 use clap::{App, Arg, SubCommand};
@@ -20,7 +19,6 @@ use std::collections::{HashMap, HashSet};
 use std::fs::OpenOptions;
 use std::io::Write;
 
-
 mod config;
 mod constants;
 mod model;
@@ -28,7 +26,7 @@ mod time_infer;
 mod utils;
 
 use constants::*;
-use model::{stream_jots, JotLine, MessageType};
+use model::{stream_jots, Jot, MessageType};
 
 fn main() -> Result<()> {
     let config = config::load_config()?;
@@ -173,7 +171,7 @@ fn main() -> Result<()> {
 
         let mut file = OpenOptions::new().append(true).open(config.journal_path)?;
 
-        let jot = JotLine::new(message.trim(), MessageType::Note);
+        let jot = Jot::new(message.trim(), MessageType::Note);
         writeln!(file, "{}", jot.to_string())?;
         writeln!(file)?;
         writeln!(file)?;
@@ -189,7 +187,7 @@ fn main() -> Result<()> {
 
         let mut file = OpenOptions::new().append(true).open(config.journal_path)?;
 
-        let jot = JotLine::new(message.trim(), MessageType::Todo(None));
+        let jot = Jot::new(message.trim(), MessageType::Todo(None));
         writeln!(file, "{}", jot.to_string())?;
         writeln!(file)?;
         writeln!(file)?;
@@ -208,7 +206,7 @@ fn main() -> Result<()> {
         }
 
         let mut file = OpenOptions::new().append(true).open(config.journal_path)?;
-        let jot = JotLine::new(message.trim(), MessageType::Reminder(reminder_time));
+        let jot = Jot::new(message.trim(), MessageType::Reminder(reminder_time));
         writeln!(file, "{}", jot.to_string())?;
         writeln!(file)?;
         writeln!(file)?;
