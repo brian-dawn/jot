@@ -113,3 +113,10 @@ Edit a note/todo/reminder:
 
     jot edit 14
 
+## Configuration
+
+Jot will use your default `$EDITOR` to determine how notes should be
+written/edited. To update this, add the following to your `.bashrc` and update `vim` to be your desired editor:
+
+    export EDITOR='vim'
+    export VISUAL='vim'
