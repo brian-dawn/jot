@@ -1,16 +1,16 @@
-use unicode_segmentation::UnicodeSegmentation;
 
-use anyhow::{Context, Result};
+
+use anyhow::{Result};
 use chrono::prelude::*;
-use clap::{App, Arg, SubCommand};
+
 
 use colorful::Colorful;
 use itertools::Itertools;
 use regex::Regex;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashSet};
 use std::fs::File;
-use std::fs::OpenOptions;
-use std::io::Write;
+
+
 use std::io::{self, BufRead};
 
 use super::config;

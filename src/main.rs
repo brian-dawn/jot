@@ -6,7 +6,7 @@ extern crate lazy_static;
 use tempfile::NamedTempFile;
 
 use notify_rust::Notification;
-use unicode_segmentation::UnicodeSegmentation;
+
 
 use anyhow::{Context, Result};
 use chrono::prelude::*;
@@ -16,10 +16,10 @@ use colorful::Colorful;
 use itertools::Itertools;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
-use std::fs::File;
+
 use std::fs::OpenOptions;
 use std::io::Write;
-use std::io::{self, BufRead};
+
 
 mod config;
 mod constants;
