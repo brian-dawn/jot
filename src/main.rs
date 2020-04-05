@@ -21,12 +21,12 @@ use std::io::Write;
 
 mod config;
 mod constants;
-mod model;
+mod jot;
 mod time_infer;
 mod utils;
 
 use constants::*;
-use model::{stream_jots, Jot, MessageType};
+use jot::{stream_jots, Jot, MessageType};
 
 fn main() -> Result<()> {
     let config = config::load_config()?;
@@ -220,7 +220,7 @@ fn main() -> Result<()> {
                 let mut tmp_file = NamedTempFile::new()?;
 
                 // Read in the entire file Jot file and stream them to a temp file.
-                for new_jot in model::stream_jots(config.clone())?.map(|mut jot| {
+                for new_jot in jot::stream_jots(config.clone())?.map(|mut jot| {
                     if jot.id == number_to_complete {
                         let message = scrawl::with(&jot.message.trim()).unwrap();
 
@@ -256,7 +256,7 @@ fn main() -> Result<()> {
                 let mut tmp_file = NamedTempFile::new()?;
 
                 // Read in the entire file Jot file and stream them to a temp file.
-                for new_jot in model::stream_jots(config.clone())?.map(|mut jot| {
+                for new_jot in jot::stream_jots(config.clone())?.map(|mut jot| {
                     if jot.id == number_to_complete {
                         match jot.msg_type {
                             MessageType::Todo(_) => {
@@ -297,7 +297,7 @@ fn main() -> Result<()> {
 
             let now: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
 
-            for jot in model::stream_jots(config.clone())? {
+            for jot in jot::stream_jots(config.clone())? {
                 if let MessageType::Reminder(remind_time) = jot.msg_type {
                     // If the notification is too far in the past.
                     if now - jot.datetime > chrono::Duration::days(1) {
@@ -549,5 +549,6 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
+    // matches.print_help();
     Ok(())
 }
