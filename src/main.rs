@@ -172,8 +172,8 @@ impl JotLine {
 
                     format!(
                         "{} reminded {} {} ago",
-                        REMINDER.white().bold(),
-                        fut_amount.to_string().bold().white(),
+                        REMINDER.yellow().bold(),
+                        fut_amount.to_string().bold().blue(),
                         pluralize_time_unit(fut_amount, fut_amount_unit)
                     )
                 } else {
@@ -182,15 +182,15 @@ impl JotLine {
                     let (fut_amount, fut_amount_unit) = pretty_duration(remind_time);
                     format!(
                         "{} in {} {}",
-                        REMINDER.red().bold(),
-                        fut_amount.to_string().bold().green(),
+                        REMINDER.yellow().bold(),
+                        fut_amount.to_string().bold().blue(),
                         pluralize_time_unit(fut_amount, fut_amount_unit)
                     )
                 }
             }
             MessageType::Todo(None) => format!(
                 "{} {} {} ago",
-                TODO.red().bold(),
+                TODO.magenta().bold(),
                 amount.to_string().bold().blue(),
                 plural_amount_unit
             ),
@@ -201,23 +201,22 @@ impl JotLine {
 
                 format!(
                     "{} completed {} {} ago",
-                    TODO.white().bold(),
+                    TODO.magenta().bold(),
                     amount.to_string().bold().blue(),
                     plural_amount_unit
                 )
             }
             MessageType::Note => format!(
                 "{} {} {} ago",
-                NOTE.white().bold(),
+                NOTE.blue().bold(),
                 amount.to_string().bold().blue(),
                 plural_amount_unit
             ),
         };
 
-        let _pretty_date = self.datetime.format("%Y-%m-%d %H:%M").to_string().blue();
         let msg = msg_override.unwrap_or(&self.message).trim();
 
-        let header = format!("{} #{}", header_string, self.id.to_string().bold());
+        let header = format!("{} #{}", header_string, self.id.to_string().cyan().bold());
         let bar_length = std::cmp::max(
             msg.lines()
                 .map(|line| count_real_chars(line.trim()).unwrap_or(0))
