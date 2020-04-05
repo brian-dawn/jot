@@ -246,9 +246,9 @@ impl JotLine {
 
         println!("{}{}{}{}", "┌─", header, s_header, "─┐");
         // TODO: I can't tell if I prefer the spacers or not
-        println!("");
+        //println!("");
         println!("{}", msg);
-        println!("");
+        //println!("");
         println!("{}{}{}", "└─", s, "─┘");
     }
 
