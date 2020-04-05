@@ -1,6 +1,6 @@
 # jot
 
-Hosted on [SourceHut](https://git.sr.ht/~brian-dawn/jot) but also hosted on [Github](https://github.com/brian-dawn/jot) for convenience. 
+Hosted on [SourceHut](https://git.sr.ht/~brian-dawn/jot) but also hosted on [Github](https://github.com/brian-dawn/jot) for convenience. If you're curious why SourceHut is neat check out [this](https://sourcehut.org/blog/2019-10-23-srht-puts-users-first/).
 
 ## Install
 
@@ -14,7 +14,7 @@ Create `$HOME/.config/jot/config.toml` by running:
 
 Edit `$HOME/.config/jot/config/toml` and give it a valid path to your journal.txt (you'll have to create it for now, absolute paths please).
 
-## MacOs Users
+## MacOS Users
 
 Macos users already have a `jot` command installed. Make sure
 `~/.cargo/bin` is in your `$PATH` or add the following to `.bashrc`:
