@@ -22,3 +22,4 @@ lazy_static = "1.4.0"
 tempfile = "3"
 prettytable-rs = "0.8.0"
 console = "0.10.0"
+textwrap = { version = "0.11", features = ["term_size"] }

@@ -114,7 +114,8 @@ impl Jot {
             ),
         };
 
-        let msg = msg_override.unwrap_or(&self.message).trim();
+        let msg =
+            crate::utils::break_apart_long_string(msg_override.unwrap_or(&self.message).trim());
 
         let header = format!("{} #{}", header_string, self.id.to_string().cyan().bold());
         let bar_length = std::cmp::max(
