@@ -51,7 +51,7 @@ fn test_pluralize_time_unit() {
     assert_eq!(pluralize_time_unit(-2, "minute"), "minutes");
 }
 
-/// Remove ANSI escape codes and count real graphemes.
+/// Remove ANSI escape codes and get the real terminal width of the text.
 pub fn count_real_chars(input: &str) -> Option<usize> {
     Some(console::measure_text_width(input))
 }
