@@ -556,16 +556,15 @@ fn main() -> Result<()> {
                 let mut tmp_file = NamedTempFile::new()?;
 
                 // Read in the entire file Jot file and stream them to a temp file.
-                for new_jot in stream_jots(config.clone())?.map(|jot| {
+                for new_jot in stream_jots(config.clone())?.map(|mut jot| {
                     if jot.id == number_to_complete {
                         let message = scrawl::with(&jot.message.trim()).unwrap();
 
                         if message.trim().is_empty() {
                             jot
                         } else {
-                            let mut new_jot = jot.clone();
-                            new_jot.message = message;
-                            new_jot
+                            jot.message = message;
+                            jot
                         }
                     } else {
                         jot
@@ -593,14 +592,13 @@ fn main() -> Result<()> {
                 let mut tmp_file = NamedTempFile::new()?;
 
                 // Read in the entire file Jot file and stream them to a temp file.
-                for new_jot in stream_jots(config.clone())?.map(|jot| {
+                for new_jot in stream_jots(config.clone())?.map(|mut jot| {
                     if jot.id == number_to_complete {
                         match jot.msg_type {
                             MessageType::Todo(_) => {
-                                let mut new_jot = jot.clone();
                                 let now: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
-                                new_jot.msg_type = MessageType::Todo(Some(now));
-                                new_jot
+                                jot.msg_type = MessageType::Todo(Some(now));
+                                jot
                             }
 
                             _ => {
