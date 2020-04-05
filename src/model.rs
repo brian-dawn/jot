@@ -165,6 +165,7 @@ impl Jot {
 }
 
 impl std::fmt::Display for Jot {
+    /// The standard to_string impl for Jot.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let st = format!("{}\n{}", self.write_to_header_string(), self.message);
         write!(f, "{}", &st)
@@ -172,6 +173,7 @@ impl std::fmt::Display for Jot {
 }
 
 impl MessageType {
+    /// Parse a message type from a string.
     fn from_string(i: &str) -> Option<MessageType> {
         let parts: Vec<&str> = i.split_whitespace().collect();
         match *parts.get(0)? {
@@ -222,14 +224,14 @@ pub fn stream_jots(config: config::Config) -> Result<impl Iterator<Item = Jot>> 
 
                 // If we reached the EOF then process the last in the buffer.
                 if line.is_none() {
-                    let result = parse_note(&header_line, &buf);
+                    let result = parse_jot(&header_line, &buf);
                     break result;
                 }
 
                 if RE.is_match(line?.trim()) {
                     if !buf.is_empty() {
                         // We finished reading a jot.
-                        let result = parse_note(&header_line, &buf);
+                        let result = parse_jot(&header_line, &buf);
                         if result.is_some() {
                             break result;
                         } else {
@@ -255,7 +257,7 @@ pub fn stream_jots(config: config::Config) -> Result<impl Iterator<Item = Jot>> 
 }
 
 /// Parse a line in our jot log.
-fn parse_note(header_line: &str, message: &str) -> Option<Jot> {
+fn parse_jot(header_line: &str, message: &str) -> Option<Jot> {
     lazy_static! {
         static ref RE: Regex =
             Regex::new(r"\[(\d\d\d\d\-\d\d\-\d\dT\d\d:\d\d:\d\d-\d\d:\d\d)(.*?)\].*").unwrap();

@@ -1,17 +1,8 @@
 use unicode_segmentation::UnicodeSegmentation;
 
-
-
-
-
-
-
-
-
-
-
-
-
+/// Given a duration, return a tuple of (scalar, time-unit).
+/// This function attempts to round far away times to the nearest large
+/// unit (naively implemented so it doesn't exactly behave that way).
 pub fn pretty_duration<'a>(time_difference: chrono::Duration) -> (i64, &'a str) {
     // Pretty print how long ago a note was taken.
     let weeks_ago = time_difference.num_weeks();
@@ -47,6 +38,7 @@ fn test_pretty_duration() {
     assert_eq!(pretty_duration(chrono::Duration::days(365)), (52, "week"));
 }
 
+/// Pluralize words e.g. Hour => Hours, etc.
 pub fn pluralize_time_unit(amount: i64, time_unit: &str) -> String {
     if amount == 1 {
         return time_unit.to_string();

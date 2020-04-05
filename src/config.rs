@@ -12,6 +12,7 @@ pub struct Config {
     pub journal_path: PathBuf,
 }
 
+/// Construct the jot config path.
 fn config_path() -> Option<PathBuf> {
     let mut base = dirs::home_dir()?;
     base.push(".config");
@@ -21,6 +22,8 @@ fn config_path() -> Option<PathBuf> {
     Some(base)
 }
 
+/// Fetch the path for our notified database.
+/// TODO: We should probably periodically prune old entries from this.
 fn notified_path() -> Option<PathBuf> {
     let mut base = dirs::data_local_dir()?;
     base.push("jot-notified");
@@ -51,6 +54,8 @@ pub fn load_notified() -> Result<HashSet<DateTime<Local>>> {
         .collect())
 }
 
+/// Mark that a particular jot has been notified on this particular computer
+/// that way we don't display it again.
 pub fn mark_notified(dt: DateTime<Local>) -> Result<()> {
     let path = notified_path().context("failed to get data path")?;
     let mut file = if !path.exists() {

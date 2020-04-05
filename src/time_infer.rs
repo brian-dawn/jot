@@ -22,12 +22,6 @@ fn time_from_date(parts: &[&str], datetime: DateTime<Local>) -> Option<DateTime<
 
 /// Given a time of day, return a duration from midnight for that day.
 fn parse_time(time: &str) -> Option<chrono::Duration> {
-    // noon
-    // morning
-    // 10am
-    // 11:34
-    //
-
     match time {
         "noon" => return Some(chrono::Duration::hours(12)),
         "morning" => return Some(chrono::Duration::hours(8)),
@@ -98,7 +92,7 @@ fn parse_time(time: &str) -> Option<chrono::Duration> {
     None
 }
 
-// on tuesday at noon
+/// Given a particular datetime from today return that date (e.g. tuesday morning).
 fn parse_on_dates(parts: &[&str], now: DateTime<Local>) -> Option<DateTime<Local>> {
     let our_midnight = now.date().and_hms(0, 0, 0);
 
@@ -133,6 +127,8 @@ fn parse_on_dates(parts: &[&str], now: DateTime<Local>) -> Option<DateTime<Local
     }
 }
 
+/// Convert "10:30am" by itself to time from now. If we say 10:30am and it's 11:00am
+/// we will return 10:30am tomorrow.
 fn just_time(parts: &[&str], now: DateTime<Local>) -> Option<DateTime<Local>> {
     let our_midnight = now.date().and_hms(0, 0, 0);
 
@@ -145,10 +141,14 @@ fn just_time(parts: &[&str], now: DateTime<Local>) -> Option<DateTime<Local>> {
     }
 }
 
+/// Given user input for a future time/date attempt to return when that datetime
+/// is.
 pub fn infer_future_time(input: &str) -> Option<DateTime<Local>> {
     let now: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
     infer_future_time_from_datetime(input, now)
 }
+
+/// Private impl of `infer_future_time` for testing purposes.
 fn infer_future_time_from_datetime(input: &str, now: DateTime<Local>) -> Option<DateTime<Local>> {
     let mut cleaned = String::new();
     cleaned.push_str(" ");
@@ -166,17 +166,19 @@ fn infer_future_time_from_datetime(input: &str, now: DateTime<Local>) -> Option<
 
     let parts = cleaned.split_whitespace().collect::<Vec<_>>();
 
+    // in 10 minutes
     let time_from_now = time_from_date(&parts, now);
     if time_from_now.is_some() {
         return time_from_now;
     }
 
+    // tuesday at 11
     let parse_on_date = parse_on_dates(&parts, now);
     if parse_on_date.is_some() {
         return parse_on_date;
     }
 
-    // TODO this can create reminders in the past. Should shove to next day.
+    // at noon
     return just_time(&parts, now);
 }
 
