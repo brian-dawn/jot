@@ -1,4 +1,3 @@
-use unicode_segmentation::UnicodeSegmentation;
 
 /// Given a duration, return a tuple of (scalar, time-unit).
 /// This function attempts to round far away times to the nearest large
@@ -55,10 +54,16 @@ fn test_pluralize_time_unit() {
 
 /// Remove ANSI escape codes and count real graphemes.
 pub fn count_real_chars(input: &str) -> Option<usize> {
-    Some(
-        std::str::from_utf8(&strip_ansi_escapes::strip(input).ok()?)
-            .ok()?
-            .graphemes(true)
-            .count(),
-    )
+    Some(console::measure_text_width(input))
+}
+
+#[test]
+fn test_count_real_chars() {
+
+    assert_eq!(count_real_chars("hello"), Some(5));
+    assert_eq!(count_real_chars("hello"), Some(5));
+    assert_eq!(count_real_chars("     "), Some(5));
+    assert_eq!(count_real_chars("👩"), Some(2));
+    assert_eq!(count_real_chars("何"), Some(2));
+    assert_eq!(count_real_chars("🖋️"), Some(1)); // TODO: This is incorrect I think?
 }
