@@ -4,13 +4,13 @@ Hosted on [SourceHut](https://git.sr.ht/~brian-dawn/jot) but also hosted on [Git
 
 ## Install
 
-If you don't have Rust installed click [here](https://rustup.rs/).
+If you don't have Rust installed an easy way is to use [rustup](https://rustup.rs/).
 
 Build and install with:
 
     cargo install --path .
 
-Create `$HOME/.config/jot/config.toml` by running:
+Create `$HOME/.config/jot/config.toml` by running (or make it yourself):
 
     jot
 
