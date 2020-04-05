@@ -409,7 +409,6 @@ fn main() -> Result<()> {
             }
 
             let mut msg = jot.message.clone();
-            // bleh idk if I like this, we should be able to do a grep or do a tag. -t -g etc.
             if let Some(sub_matches) = matches.subcommand_matches(read_cmd) {
                 // Skip checks.
                 let tags = sub_matches
