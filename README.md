@@ -14,6 +14,14 @@ Create `$HOME/.config/jot/config.toml` by running:
 
 Edit `$HOME/.config/jot/config/toml` and give it a valid path to your journal.txt (you'll have to create it for now, absolute paths please).
 
+## MacOs Users
+
+Macos users already have a `jot` command installed. Make sure
+`~/.cargo/bin` is in your `$PATH` or add the following to `.bashrc`:
+
+    source $HOME/.cargo/env
+
+
 ## Notifications
 
 When you run `jot notify` jot will attempt to notify you via your operating
