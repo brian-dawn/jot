@@ -1,9 +1,9 @@
+/// Commands that work with tags live here.
+use crate::config::Config;
+use crate::jot::{stream_jots, MessageType};
 use anyhow::Result;
 use colorful::Colorful;
 use std::collections::{HashMap, HashSet};
-
-use crate::config::Config;
-use crate::jot::{stream_jots, MessageType};
 
 pub fn tags_command(config: Config) -> Result<()> {
     let mut all_tags = HashSet::new();

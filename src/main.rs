@@ -3,21 +3,10 @@ extern crate prettytable;
 #[macro_use]
 extern crate lazy_static;
 
-use tempfile::NamedTempFile;
-
-use notify_rust::Notification;
-
-use anyhow::{Context, Result};
-use chrono::prelude::*;
+use crate::constants::*;
+use anyhow::Result;
 use clap::{App, Arg, SubCommand};
-
-use colorful::Colorful;
 use itertools::Itertools;
-use regex::Regex;
-use std::collections::HashSet;
-
-use std::fs::OpenOptions;
-use std::io::Write;
 
 mod commands;
 mod config;
@@ -25,9 +14,6 @@ mod constants;
 mod jot;
 mod time_infer;
 mod utils;
-
-use constants::*;
-use jot::{stream_jots, Jot, MessageType};
 
 fn main() -> Result<()> {
     let config = config::load_config()?;
@@ -165,219 +151,45 @@ fn main() -> Result<()> {
         .get_matches();
 
     if let Some(_matches) = matches.subcommand_matches(NOTE) {
-        let message = scrawl::new()?;
-        if message.trim().is_empty() {
-            return Ok(());
-        }
-
-        let mut file = OpenOptions::new().append(true).open(config.journal_path)?;
-
-        let jot = Jot::new(message.trim(), MessageType::Note);
-        writeln!(file, "{}", jot.to_string())?;
-        writeln!(file)?;
-        writeln!(file)?;
-
-        return Ok(());
+        return commands::create::create_note_command(config);
     }
 
     if let Some(_matches) = matches.subcommand_matches(TODO) {
-        let message = scrawl::new()?;
-        if message.trim().is_empty() {
-            return Ok(());
-        }
-
-        let mut file = OpenOptions::new().append(true).open(config.journal_path)?;
-
-        let jot = Jot::new(message.trim(), MessageType::Todo(None));
-        writeln!(file, "{}", jot.to_string())?;
-        writeln!(file)?;
-        writeln!(file)?;
-
-        return Ok(());
+        return commands::create::create_todo_command(config);
     }
 
     if let Some(matches) = matches.subcommand_matches(REMINDER) {
         let time_str = matches.values_of("TIME").unwrap().join(" ");
-        let reminder_time =
-            time_infer::infer_future_time(&time_str).context("invalid time string")?;
-
-        let message = scrawl::new()?;
-        if message.trim().is_empty() {
-            return Ok(());
-        }
-
-        let mut file = OpenOptions::new().append(true).open(config.journal_path)?;
-        let jot = Jot::new(message.trim(), MessageType::Reminder(reminder_time));
-        writeln!(file, "{}", jot.to_string())?;
-        writeln!(file)?;
-        writeln!(file)?;
-
-        return Ok(());
+        return commands::create::create_reminder_command(config, &time_str);
     }
 
     if let Some(matches) = matches.subcommand_matches("edit") {
         match matches.value_of("NUMBER").unwrap().parse::<usize>() {
-            Ok(number_to_complete) => {
-                let mut tmp_file = NamedTempFile::new()?;
-
-                // Read in the entire file Jot file and stream them to a temp file.
-                for new_jot in jot::stream_jots(config.clone())?.map(|mut jot| {
-                    if jot.id == number_to_complete {
-                        let message = scrawl::with(&jot.message.trim()).unwrap();
-
-                        if message.trim().is_empty() {
-                            jot
-                        } else {
-                            jot.message = message;
-                            jot
-                        }
-                    } else {
-                        jot
-                    }
-                }) {
-                    // Write out the stream of jots to the new temp file
-                    writeln!(tmp_file, "{}", new_jot.to_string())?;
-                    writeln!(tmp_file)?;
-                    writeln!(tmp_file)?;
-                }
-
-                // Now we move the temp file over the journal.
-                std::fs::copy(tmp_file.path(), config.journal_path)?;
-            }
+            Ok(number_to_edit) => return commands::edit::edit_jot_contents(config, number_to_edit),
             Err(_) => {
                 println!("invalid note number");
                 std::process::exit(1)
             }
         }
-        return Ok(());
     }
     if let Some(matches) = matches.subcommand_matches("complete") {
         match matches.value_of("NUMBER").unwrap().parse::<usize>() {
             Ok(number_to_complete) => {
-                let mut tmp_file = NamedTempFile::new()?;
-
-                // Read in the entire file Jot file and stream them to a temp file.
-                for new_jot in jot::stream_jots(config.clone())?.map(|mut jot| {
-                    if jot.id == number_to_complete {
-                        match jot.msg_type {
-                            MessageType::Todo(_) => {
-                                let now: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
-                                jot.msg_type = MessageType::Todo(Some(now));
-                                jot
-                            }
-
-                            _ => {
-                                println!("you can only complete a todo");
-                                std::process::exit(1)
-                            }
-                        }
-                    } else {
-                        jot
-                    }
-                }) {
-                    // Write out the stream of jots to the new temp file
-                    writeln!(tmp_file, "{}", new_jot.to_string())?;
-                    writeln!(tmp_file)?;
-                    writeln!(tmp_file)?;
-                }
-
-                // Now we move the temp file over the journal.
-                std::fs::copy(tmp_file.path(), config.journal_path)?;
+                return commands::edit::mark_todo_complete_command(config, number_to_complete)
             }
             Err(_) => {
                 println!("invalid note number");
                 std::process::exit(1)
             }
         }
-        return Ok(());
     }
 
     if let Some(_matches) = matches.subcommand_matches("daemon") {
-        loop {
-            let notified = config::load_notified()?;
-
-            let now: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
-
-            for jot in jot::stream_jots(config.clone())? {
-                if let MessageType::Reminder(remind_time) = jot.msg_type {
-                    // If the notification is too far in the past.
-                    if now - jot.datetime > chrono::Duration::days(1) {
-                        continue;
-                    }
-
-                    // If we already notified about this one.
-                    if notified.contains(&jot.datetime) {
-                        continue;
-                    }
-
-                    // BUT if we are within X seconds of it lets just wait then notify.
-                    if now - remind_time < chrono::Duration::seconds(60) {
-                        match (now - remind_time).to_std() {
-                            Ok(duration) => std::thread::sleep(duration),
-                            Err(_) => {
-                                continue;
-                            }
-                        }
-                    } else {
-                        // We have to be at least past the point of the reminder.
-                        if remind_time - now > chrono::Duration::seconds(0) {
-                            continue;
-                        }
-                    }
-
-                    println!("we got a reminder!");
-
-                    Notification::new()
-                        .summary("jot")
-                        .body(&jot.message)
-                        .show()
-                        .unwrap();
-
-                    // Mark it as notified.
-                    config::mark_notified(jot.datetime)?;
-                }
-            }
-
-            let one_minute = std::time::Duration::from_millis(1000);
-            std::thread::sleep(one_minute);
-        }
+        return commands::notify::daemon_mode(config);
     }
 
     if let Some(_matches) = matches.subcommand_matches("notify") {
-        let notified = config::load_notified()?;
-
-        let now: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
-
-        for jot in stream_jots(config)? {
-            if let MessageType::Reminder(remind_time) = jot.msg_type {
-                // If the notification is too far in the past.
-                if now - jot.datetime > chrono::Duration::days(1) {
-                    continue;
-                }
-
-                // If we already notified about this one.
-                if notified.contains(&jot.datetime) {
-                    continue;
-                }
-
-                // We have to be at least past the point of the reminder.
-                if remind_time - now > chrono::Duration::seconds(0) {
-                    continue;
-                }
-
-                println!("we got a reminder!");
-
-                Notification::new()
-                    .summary("jot")
-                    .body(&jot.message)
-                    .show()
-                    .unwrap();
-
-                // Mark it as notified.
-                config::mark_notified(jot.datetime)?;
-            }
-        }
-        return Ok(());
+        return commands::notify::notify(config);
     }
 
     // Commands for displaying various note types.
@@ -385,83 +197,7 @@ fn main() -> Result<()> {
         .into_iter()
         .find(|t| matches.subcommand_matches(t).is_some());
     if let Some(read_cmd) = read_sub_cmd {
-        for jot in stream_jots(config)? {
-            // See if we need to filter by the message type
-            if read_cmd != "cat" {
-                match jot.msg_type {
-                    MessageType::Note => {
-                        if read_cmd != NOTES {
-                            continue;
-                        }
-                    }
-
-                    MessageType::Reminder(_) => {
-                        if read_cmd != REMINDERS {
-                            continue;
-                        }
-                    }
-
-                    MessageType::Todo(_) => {
-                        if read_cmd != TODOS {
-                            continue;
-                        }
-                    }
-                }
-            }
-
-            let mut msg = jot.message.clone();
-            if let Some(sub_matches) = matches.subcommand_matches(read_cmd) {
-                // Skip checks.
-                let tags = sub_matches
-                    .values_of("TAG")
-                    .map(|m| m.collect::<HashSet<&str>>())
-                    .unwrap_or_default();
-
-                if !(tags.is_empty() || tags.iter().all(|tag| jot.tags.contains(*tag))) {
-                    continue;
-                }
-
-                let greps = sub_matches
-                    .values_of("GREP")
-                    .map(|m| {
-                        m.map(|grep| {
-                            let re_attempt = Regex::new(grep);
-                            match re_attempt {
-                                Ok(re) => re,
-                                Err(err) => {
-                                    println!("invalid regex {:?} error={:?}", grep, err);
-                                    std::process::exit(1);
-                                }
-                            }
-                        })
-                        .collect::<Vec<_>>()
-                    })
-                    .unwrap_or_default();
-
-                if !(greps.is_empty() || greps.iter().all(|re| re.find(&jot.message).is_some())) {
-                    continue;
-                } else {
-                    // We did find some grep'd things. Update and highlight our message.
-
-                    // We need to go in backwards order to preserve the indices.
-                    for re in greps {
-                        let found = re
-                            .find_iter(&jot.message)
-                            .collect::<Vec<_>>()
-                            .into_iter()
-                            .rev();
-                        for m in found {
-                            let highlighted = &msg[m.start()..m.end()].to_string().red();
-                            msg.replace_range(m.start()..m.end(), &highlighted.to_string());
-                        }
-                    }
-                }
-            }
-
-            jot.pprint_with_custom_msg(Some(&msg));
-            println!();
-        }
-        return Ok(());
+        return commands::view::display(config, read_cmd, matches);
     }
 
     if let Some(_matches) = matches.subcommand_matches("tags") {

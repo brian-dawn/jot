@@ -9,9 +9,9 @@ use std::fs::File;
 
 use std::io::{self, BufRead};
 
-use super::config;
-use super::constants::*;
-use super::utils::{count_real_chars, pluralize_time_unit, pretty_duration};
+use crate::config;
+use crate::constants::*;
+use crate::utils::{count_real_chars, pluralize_time_unit, pretty_duration};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Jot {
