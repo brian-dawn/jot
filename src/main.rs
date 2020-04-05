@@ -42,18 +42,18 @@ enum MessageType {
     Todo(Option<DateTime<Local>>),
 }
 
-const TODO_NOT_DONE_PLACEHOLDER: &'static str = "not-done";
-const REMIND_HEADER: &'static str = "remind";
-const TODO_HEADER: &'static str = TODO;
+const TODO_NOT_DONE_PLACEHOLDER: &str = "not-done";
+const REMIND_HEADER: &str = "remind";
+const TODO_HEADER: &str = TODO;
 
-const REMINDER: &'static str = "reminder";
-const REMINDERS: &'static str = "reminders";
+const REMINDER: &str = "reminder";
+const REMINDERS: &str = "reminders";
 
-const TODO: &'static str = "todo";
-const TODOS: &'static str = "todos";
+const TODO: &str = "todo";
+const TODOS: &str = "todos";
 
-const NOTE: &'static str = "note";
-const NOTES: &'static str = "notes";
+const NOTE: &str = "note";
+const NOTES: &str = "notes";
 
 impl MessageType {
     fn from_string(i: &str) -> Option<MessageType> {
@@ -130,7 +130,6 @@ fn test_pluralize_time_unit() {
     assert_eq!(pluralize_time_unit(2, "day"), "days");
     assert_eq!(pluralize_time_unit(-2, "minute"), "minutes");
 }
-
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 struct JotLine {
@@ -227,14 +226,13 @@ impl JotLine {
             count_real_chars(header.trim()).unwrap_or(0),
         );
 
-
         let header_chars = count_real_chars(&header).unwrap_or(0);
         let s_header = std::iter::repeat("─")
             .take(std::cmp::max(0, bar_length as i64 - header_chars as i64 - 2) as usize)
             .collect::<String>();
 
         let s = std::iter::repeat("─")
-            .take(count_real_chars(&s_header).unwrap_or(0) + header_chars )
+            .take(count_real_chars(&s_header).unwrap_or(0) + header_chars)
             .collect::<String>();
 
         println!("{}{}{}{}", "┌─", header, s_header, "─┐");

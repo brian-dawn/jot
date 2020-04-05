@@ -1,7 +1,7 @@
 use chrono::prelude::*;
 
 /// 1 day, 3 seconds, 2 seconds from now
-fn time_from_date(parts: &Vec<&str>, datetime: DateTime<Local>) -> Option<DateTime<Local>> {
+fn time_from_date(parts: &[&str], datetime: DateTime<Local>) -> Option<DateTime<Local>> {
     let numeric = parts.get(0)?.parse::<f32>().ok()?;
     let time_unit = parts.get(1)?;
 
@@ -99,7 +99,7 @@ fn parse_time(time: &str) -> Option<chrono::Duration> {
 }
 
 // on tuesday at noon
-fn parse_on_dates(parts: &Vec<&str>, now: DateTime<Local>) -> Option<DateTime<Local>> {
+fn parse_on_dates(parts: &[&str], now: DateTime<Local>) -> Option<DateTime<Local>> {
     let our_midnight = now.date().and_hms(0, 0, 0);
 
     let current_weekday = now.weekday();
@@ -133,15 +133,15 @@ fn parse_on_dates(parts: &Vec<&str>, now: DateTime<Local>) -> Option<DateTime<Lo
     }
 }
 
-fn just_time(parts: &Vec<&str>, now: DateTime<Local>) -> Option<DateTime<Local>> {
+fn just_time(parts: &[&str], now: DateTime<Local>) -> Option<DateTime<Local>> {
     let our_midnight = now.date().and_hms(0, 0, 0);
 
     let time_from_midnight = parse_time(&parts.get(0)?)?;
 
     if our_midnight + time_from_midnight < now {
-        return Some(our_midnight + time_from_midnight + chrono::Duration::days(1));
+        Some(our_midnight + time_from_midnight + chrono::Duration::days(1))
     } else {
-        return Some(our_midnight + time_from_midnight);
+        Some(our_midnight + time_from_midnight)
     }
 }
 
