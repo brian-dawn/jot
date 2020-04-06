@@ -23,3 +23,6 @@ tempfile = "3"
 prettytable-rs = "0.8.0"
 console = "0.10.0"
 textwrap = { version = "0.11", features = ["term_size"] }
+byteorder = "1"
+base64 = "0.12.0"
+rand = "0.7.3"

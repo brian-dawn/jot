@@ -86,3 +86,10 @@ pub fn display(config: Config, read_cmd: &str, matches: clap::ArgMatches) -> Res
     }
     Ok(())
 }
+
+pub fn get_all_uuids(config: Config) -> Result<HashSet<String>> {
+    Ok(stream_jots(config)?
+        .map(|jot| jot.uuid)
+        .filter_map(|uuid| uuid)
+        .collect())
+}

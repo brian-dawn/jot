@@ -11,6 +11,7 @@ use std::io::{self, BufRead};
 
 use crate::config;
 use crate::constants::*;
+use crate::utils;
 use crate::utils::{count_real_chars, pluralize_time_unit, pretty_duration};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -21,6 +22,7 @@ pub struct Jot {
     // TODO: These two fields aren't needed for creating new jots but are only when it is read.
     //       Maybe we should make a ReadJot super type?
     pub id: usize,
+    pub uuid: Option<String>,
     pub tags: HashSet<String>,
 }
 
@@ -43,7 +45,7 @@ pub enum MessageType {
 }
 
 impl Jot {
-    pub fn new(message: &str, message_type: MessageType) -> Jot {
+    pub fn new(message: &str, message_type: MessageType, previous_uuids: &HashSet<String>) -> Jot {
         let local: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
 
         Jot {
@@ -51,6 +53,7 @@ impl Jot {
             message: message.trim().to_string(),
             msg_type: message_type,
             id: 0,
+            uuid: Some(utils::generate_new_uuid(previous_uuids)), // todo replace with randomize fn, we need to know all previous
             tags: HashSet::new(),
         }
     }
@@ -116,7 +119,15 @@ impl Jot {
 
         let msg = msg_override.unwrap_or(&self.message).trim();
 
-        let header = format!("{} #{}", header_string, self.id.to_string().cyan().bold());
+        let header = format!(
+            "{} [{}]",
+            header_string,
+            self.uuid
+                .clone()
+                .unwrap_or(self.id.to_string())
+                .cyan()
+                .bold()
+        );
         let bar_length = std::cmp::max(
             msg.lines()
                 .map(|line| count_real_chars(line.trim()).unwrap_or(0))
@@ -135,10 +146,7 @@ impl Jot {
             .collect::<String>();
 
         println!("{}{}{}{}", "┌─", header, s_header, "─┐");
-        // TODO: I can't tell if I prefer the spacers or not
-        //println!("");
         println!("{}", msg);
-        //println!("");
         println!("{}{}{}", "└─", s, "─┘");
     }
 
@@ -147,18 +155,38 @@ impl Jot {
         let date_str = self.datetime.to_rfc3339();
 
         match self.msg_type {
-            MessageType::Note => format!("[{}]", date_str),
+            MessageType::Note => {
+                if let Some(uuid) = &self.uuid {
+                    format!("[{} id={}]", date_str, uuid)
+                } else {
+                    format!("[{}]", date_str)
+                }
+            }
 
             MessageType::Reminder(reminder_date) => {
                 let reminder_date_str = reminder_date.to_rfc3339();
-                format!("[{} {} on {}]", date_str, REMIND_HEADER, reminder_date_str)
+                if let Some(uuid) = &self.uuid {
+                    format!(
+                        "[{} {} on {} id={}]",
+                        date_str, REMIND_HEADER, reminder_date_str, uuid
+                    )
+                } else {
+                    format!("[{} {} on {}]", date_str, REMIND_HEADER, reminder_date_str,)
+                }
             }
 
             MessageType::Todo(maybe_completed_date) => {
                 let completed_str = maybe_completed_date
                     .map(|date| date.to_rfc3339())
                     .unwrap_or(TODO_NOT_DONE_PLACEHOLDER.to_string());
-                format!("[{} {} {}]", date_str, TODO_HEADER, completed_str)
+                if let Some(uuid) = &self.uuid {
+                    format!(
+                        "[{} {} {} id={}]",
+                        date_str, TODO_HEADER, completed_str, uuid
+                    )
+                } else {
+                    format!("[{} {} {}]", date_str, TODO_HEADER, completed_str)
+                }
             }
         }
     }
@@ -174,28 +202,37 @@ impl std::fmt::Display for Jot {
 
 impl MessageType {
     /// Parse a message type from a string.
-    fn from_string(i: &str) -> Option<MessageType> {
+    fn from_string(i: &str) -> Option<(Option<String>, MessageType)> {
         let parts: Vec<&str> = i.split_whitespace().collect();
+
+        let id_part = parts
+            .iter()
+            .find(|p| p.starts_with("id="))
+            .map(|id_part| id_part.split("=").last().unwrap_or("").to_string());
+
         match *parts.get(0)? {
             REMIND_HEADER => {
                 let date = parts.get(2)?;
                 let parsed_date: DateTime<FixedOffset> =
                     DateTime::parse_from_rfc3339(&date).ok()?;
-                Some(MessageType::Reminder(DateTime::from(parsed_date)))
+                Some((id_part, MessageType::Reminder(DateTime::from(parsed_date))))
             }
             TODO_HEADER => {
                 let date = parts.get(1)?.trim();
                 if date == TODO_NOT_DONE_PLACEHOLDER {
-                    Some(MessageType::Todo(None))
+                    Some((id_part, MessageType::Todo(None)))
                 } else {
                     // Attempt to parse the completed date.
 
                     let parsed_date: DateTime<FixedOffset> =
                         DateTime::parse_from_rfc3339(&date).ok()?;
-                    Some(MessageType::Todo(Some(DateTime::from(parsed_date))))
+                    Some((
+                        id_part,
+                        MessageType::Todo(Some(DateTime::from(parsed_date))),
+                    ))
                 }
             }
-            _ => Some(MessageType::Note),
+            _ => Some((id_part, MessageType::Note)),
         }
     }
 }
@@ -274,11 +311,14 @@ fn parse_jot(header_line: &str, message: &str) -> Option<Jot> {
         .collect();
 
     let parsed_date: DateTime<FixedOffset> = DateTime::parse_from_rfc3339(&date).ok()?;
+    let (id, msg_type) =
+        MessageType::from_string(&message_type).unwrap_or((None, MessageType::Note));
     Some(Jot {
         datetime: DateTime::from(parsed_date),
         message: message.trim().to_string(),
         tags,
         id: 0,
-        msg_type: MessageType::from_string(&message_type).unwrap_or(MessageType::Note),
+        uuid: id,
+        msg_type: msg_type,
     })
 }

@@ -151,37 +151,32 @@ fn main() -> Result<()> {
         .get_matches();
 
     if let Some(_matches) = matches.subcommand_matches(NOTE) {
-        return commands::create::create_note_command(config);
+        let previous_uuids = commands::view::get_all_uuids(config.clone())
+            .unwrap_or(std::collections::HashSet::new());
+        return commands::create::create_note_command(config, &previous_uuids);
     }
 
     if let Some(_matches) = matches.subcommand_matches(TODO) {
-        return commands::create::create_todo_command(config);
+        let previous_uuids = commands::view::get_all_uuids(config.clone())
+            .unwrap_or(std::collections::HashSet::new());
+        return commands::create::create_todo_command(config, &previous_uuids);
     }
 
     if let Some(matches) = matches.subcommand_matches(REMINDER) {
         let time_str = matches.values_of("TIME").unwrap().join(" ");
-        return commands::create::create_reminder_command(config, &time_str);
+
+        let previous_uuids = commands::view::get_all_uuids(config.clone())
+            .unwrap_or(std::collections::HashSet::new());
+        return commands::create::create_reminder_command(config, &time_str, &previous_uuids);
     }
 
     if let Some(matches) = matches.subcommand_matches("edit") {
-        match matches.value_of("NUMBER").unwrap().parse::<usize>() {
-            Ok(number_to_edit) => return commands::edit::edit_jot_contents(config, number_to_edit),
-            Err(_) => {
-                println!("invalid note number");
-                std::process::exit(1)
-            }
-        }
+        let id_or_uuid = matches.value_of("NUMBER").unwrap();
+        return commands::edit::edit_jot_contents(config, id_or_uuid);
     }
     if let Some(matches) = matches.subcommand_matches("complete") {
-        match matches.value_of("NUMBER").unwrap().parse::<usize>() {
-            Ok(number_to_complete) => {
-                return commands::edit::mark_todo_complete_command(config, number_to_complete)
-            }
-            Err(_) => {
-                println!("invalid note number");
-                std::process::exit(1)
-            }
-        }
+        let id_or_uuid = matches.value_of("NUMBER").unwrap();
+        return commands::edit::mark_todo_complete_command(config, id_or_uuid);
     }
 
     if let Some(_matches) = matches.subcommand_matches("daemon") {
