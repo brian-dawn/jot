@@ -19,7 +19,7 @@ fn get_user_input() -> Result<String> {
 }
 
 /// Append a jot to the journal specified in the config.
-fn append_jot_to_journal(config: Config, jot: Jot) -> Result<()> {
+fn append_jot_to_journal(config: Config, jot: &Jot) -> Result<()> {
     let mut file = OpenOptions::new().append(true).open(config.journal_path)?;
 
     writeln!(file, "{}", jot.to_string())?;
@@ -33,7 +33,9 @@ pub fn create_note_command(config: Config, previous_uuids: &HashSet<String>) -> 
     let message = get_user_input()?;
 
     let jot = Jot::new(message.trim(), MessageType::Note, previous_uuids);
-    append_jot_to_journal(config, jot)
+    append_jot_to_journal(config, &jot)?;
+    jot.pprint_with_custom_msg(None);
+    Ok(())
 }
 
 pub fn create_todo_command(config: Config, previous_uuids: &HashSet<String>) -> Result<()> {
@@ -41,7 +43,9 @@ pub fn create_todo_command(config: Config, previous_uuids: &HashSet<String>) -> 
 
     let jot = Jot::new(message.trim(), MessageType::Todo(None), previous_uuids);
 
-    append_jot_to_journal(config, jot)
+    append_jot_to_journal(config, &jot)?;
+    jot.pprint_with_custom_msg(None);
+    Ok(())
 }
 
 pub fn create_reminder_command(
@@ -60,5 +64,7 @@ pub fn create_reminder_command(
         previous_uuids,
     );
 
-    append_jot_to_journal(config, jot)
+    append_jot_to_journal(config, &jot)?;
+    jot.pprint_with_custom_msg(None);
+    Ok(())
 }
