@@ -93,20 +93,26 @@ pub fn generate_new_uuid(previous_uuids: &std::collections::HashSet<String>) -> 
     //           inside that range of available numbers (if there are slots available) and
     //           then increase that id by 1 every repeatedly till we find one that is available.
 
-    let len = previous_uuids.len() + BASE as usize;
-    //
-    // Users can name things whatever they want
-    // We should prefer short names.
-    // if previous_uuids is sufficiently long we increase the bit space.
     // NOTE: we add 26 to len because that's where we start counting to ensure
     //       every uuid has at least 2 digits.
-    let pool_to_draw_from = if len < BASE_2 as usize {
+    let len = previous_uuids.len() + BASE as usize;
+
+    // If previous_uuids is sufficiently long we increase the bit space.
+    // This means that if the user has a lot of custom ones we might artificially
+    // hit these sooner.
+
+    // For each of these checks we subtract away the previous base. I'm no mathemagician
+    // but since we're drawing from a mostly random, evenly distributed pool we want to
+    // on average hit an open spot relatively quick. If we let the entire space fill up
+    // the worst case is we might have to iterate the entire darn space. If we never entirely
+    // fill up a slot this seems safe.
+    let pool_to_draw_from = if len < (BASE_2 - BASE) as usize {
         // 26^2, 2 letters should be available.
         BASE_2
-    } else if len < BASE_3 as usize {
+    } else if len < (BASE_3 - BASE_2) as usize {
         // 26^3, 3 letters should be available.
         BASE_3
-    } else if len < BASE_4 as usize {
+    } else if len < (BASE_4 - BASE_3) as usize {
         // 26^4, 4 letters should be available.
         // TODO: at this point we should parallelize the walk. :P
         BASE_4
