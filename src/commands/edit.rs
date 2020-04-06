@@ -18,7 +18,7 @@ pub fn mark_todo_complete_command(config: Config, note_id_to_mark_complete: &str
 
     // Read in the entire file Jot file and stream them to a temp file.
     for new_jot in stream_jots(config.clone())?.map(|mut jot| {
-        if Some(jot.id) == maybe_check_id || jot.uuid == uuid {
+        if jot.uuid == uuid || Some(jot.id) == maybe_check_id {
             match jot.msg_type {
                 MessageType::Todo(_) => {
                     let now: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
@@ -56,7 +56,7 @@ pub fn edit_jot_contents(config: Config, note_id_to_edit: &str) -> Result<()> {
 
     // Read in the entire file Jot file and stream them to a temp file.
     for new_jot in stream_jots(config.clone())?.map(|mut jot| {
-        if Some(jot.id) == maybe_check_id || jot.uuid == uuid {
+        if jot.uuid == uuid || Some(jot.id) == maybe_check_id {
             let message = scrawl::with(&jot.message.trim()).unwrap();
 
             if message.trim().is_empty() {
