@@ -222,6 +222,11 @@ fn test_infer_future_time() -> anyhow::Result<()> {
     );
 
     assert_eq!(
+        Some(parse("2020-04-06T01:45:00-05:00")),
+        infer_future_time_from_datetime("       monday    at    1:45am        ", now)
+    );
+
+    assert_eq!(
         Some(parse("2020-04-10T12:00:00-05:00")),
         infer_future_time_from_datetime("friday at noon", now)
     );
