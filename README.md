@@ -68,9 +68,9 @@ View all todos:
 
     jot todos
 
-Complete a todo:
+Complete a todo (where `kw` is the id):
 
-    jot complete 4
+    jot complete kw
 
 
 ### Reminders
@@ -118,9 +118,9 @@ Grep any of the view commands:
     jot todos -g birthday
     jot cat -g "foo.*?bar"
 
-Edit a note/todo/reminder:
+Edit a note/todo/reminder (where `bt` is the id):
 
-    jot edit 14
+    jot edit bt
 
 ## Configuration
 

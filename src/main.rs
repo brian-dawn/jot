@@ -110,20 +110,20 @@ fn main() -> Result<()> {
             SubCommand::with_name("edit")
                 .about("Edit the contents of a note/todo/reminder")
                 .arg(
-                    Arg::with_name("NUMBER")
-                        .value_name("NUMBER")
+                    Arg::with_name("ID")
+                        .value_name("ID")
                         .takes_value(true)
-                        .help("The note number"),
+                        .help("The id of the note you wish to edit"),
                 ),
         )
         .subcommand(
             SubCommand::with_name("complete")
                 .about("Complete a todo")
                 .arg(
-                    Arg::with_name("NUMBER")
-                        .value_name("NUMBER")
+                    Arg::with_name("ID")
+                        .value_name("ID")
                         .takes_value(true)
-                        .help("The note number"),
+                        .help("The id of the todo you wish to complete"),
                 ),
         )
         .subcommand(
@@ -171,11 +171,11 @@ fn main() -> Result<()> {
     }
 
     if let Some(matches) = matches.subcommand_matches("edit") {
-        let id_or_uuid = matches.value_of("NUMBER").unwrap();
+        let id_or_uuid = matches.value_of("ID").unwrap();
         return commands::edit::edit_jot_contents(config, id_or_uuid);
     }
     if let Some(matches) = matches.subcommand_matches("complete") {
-        let id_or_uuid = matches.value_of("NUMBER").unwrap();
+        let id_or_uuid = matches.value_of("ID").unwrap();
         return commands::edit::mark_todo_complete_command(config, id_or_uuid);
     }
 
