@@ -75,7 +75,7 @@ impl Jot {
 
                     format!(
                         "{} reminded {} {} ago",
-                        REMINDER.yellow().bold(),
+                        REMINDER.white().bold(),
                         fut_amount.to_string().bold().blue(),
                         pluralize_time_unit(fut_amount, fut_amount_unit)
                     )
@@ -104,7 +104,7 @@ impl Jot {
 
                 format!(
                     "{} completed {} {} ago",
-                    TODO.magenta().bold(),
+                    TODO.green().bold(),
                     amount.to_string().bold().blue(),
                     plural_amount_unit
                 )
