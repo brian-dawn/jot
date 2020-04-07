@@ -127,6 +127,16 @@ fn main() -> Result<()> {
                 ),
         )
         .subcommand(
+            SubCommand::with_name("delete")
+                .about("Complete a todo")
+                .arg(
+                    Arg::with_name("ID")
+                        .value_name("ID")
+                        .takes_value(true)
+                        .help("The id of the todo you wish to delete"),
+                ),
+        )
+        .subcommand(
             SubCommand::with_name(REMINDERS)
                 .about("View all reminders")
                 .arg(
@@ -174,6 +184,12 @@ fn main() -> Result<()> {
         let id_or_uuid = matches.value_of("ID").unwrap();
         return commands::edit::edit_jot_contents(config, id_or_uuid);
     }
+
+    if let Some(matches) = matches.subcommand_matches("delete") {
+        let id_or_uuid = matches.value_of("ID").unwrap();
+        return commands::edit::delete_jot(config, id_or_uuid);
+    }
+
     if let Some(matches) = matches.subcommand_matches("complete") {
         let id_or_uuid = matches.value_of("ID").unwrap();
         return commands::edit::mark_todo_complete_command(config, id_or_uuid);

@@ -122,6 +122,10 @@ Edit a note/todo/reminder (where `bt` is the id):
 
     jot edit bt
 
+Delete a note/todo/reminder (where 'fq' is the id):
+
+    jot delete fq
+
 ## Configuration
 
 Jot will use your default `$EDITOR` to determine how notes should be
