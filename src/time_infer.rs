@@ -152,7 +152,7 @@ pub fn infer_future_time(input: &str) -> Option<DateTime<Local>> {
 fn infer_future_time_from_datetime(input: &str, now: DateTime<Local>) -> Option<DateTime<Local>> {
     let mut cleaned = String::new();
     cleaned.push_str(" ");
-    cleaned.push_str(input);
+    cleaned.push_str(&input.to_lowercase());
     cleaned.push_str(" ");
 
     // We don't need these and they only get in the way of parsing.
@@ -209,6 +209,11 @@ fn test_infer_future_time() -> anyhow::Result<()> {
     assert_eq!(
         Some(parse("2020-04-06T01:00:00-05:00")),
         infer_future_time_from_datetime("monday at 1am", now)
+    );
+
+    assert_eq!(
+        Some(parse("2020-04-06T01:00:00-05:00")),
+        infer_future_time_from_datetime("MonDAY aT 1AM", now)
     );
 
     assert_eq!(
