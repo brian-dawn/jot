@@ -17,7 +17,7 @@ Initialize jot by running:
 If you want to customize where the journal file lives
 edit `$HOME/.config/jot/config.toml` and give it a valid path to your journal.txt (you'll have to create it for now, absolute paths please). 
 
-I like putting my journal in a Syncthing folder so my config looks like this:
+I like putting my journal in a [Syncthing](https://syncthing.net/) (Dropbox would also work) folder so my config looks like this:
 
 ```
 journal_path = "/Users/brian/Sync/journal.txt"
