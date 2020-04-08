@@ -77,13 +77,13 @@ pub fn break_apart_long_string(st: &str) -> String {
     format!("{}", textwrap::fill(st, ideal_split_point as usize))
 }
 
-const BASE: u32 = 26;
+const BASE: u32 = 21;
 const BASE_2: u32 = BASE * BASE;
 const BASE_3: u32 = BASE * BASE * BASE;
 const BASE_4: u32 = BASE * BASE * BASE * BASE;
 const LETTERS: [char; BASE as usize] = [
-    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
-    't', 'u', 'v', 'w', 'x', 'y', 'z',
+    'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'q', 'r', 's', 't', 'v', 'w', 'x',
+    'y', 'z',
 ];
 
 /// Generate a new uuid that is unique favoring short and easy to type ids.
