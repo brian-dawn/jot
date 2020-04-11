@@ -41,7 +41,7 @@ pub fn mark_todo_complete_command(config: Config, note_id_to_mark_complete: &str
                 MessageType::Todo(_) => {
                     let now: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
                     jot.msg_type = MessageType::Todo(Some(now));
-                    jot.pprint_with_custom_msg(None);
+                    jot.pprint();
                     jot
                 }
 
@@ -70,7 +70,7 @@ pub fn delete_jot(config: Config, note_id_to_delete: &str) -> Result<()> {
         let this_one_should_be_deleted = jot.uuid == uuid || Some(jot.id) == maybe_check_id;
         if this_one_should_be_deleted {
             // Print it out so the user knows it got deleted.
-            jot.pprint_with_custom_msg(None);
+            jot.pprint();
         }
 
         !this_one_should_be_deleted
@@ -93,7 +93,7 @@ pub fn edit_jot_contents(config: Config, note_id_to_edit: &str) -> Result<()> {
                 jot
             } else {
                 jot.message = message;
-                jot.pprint_with_custom_msg(None);
+                jot.pprint();
                 jot
             }
         } else {

@@ -34,7 +34,7 @@ pub fn create_note_command(config: Config, previous_uuids: &HashSet<String>) -> 
 
     let jot = Jot::new(message.trim(), MessageType::Note, previous_uuids);
     append_jot_to_journal(config, &jot)?;
-    jot.pprint_with_custom_msg(None);
+    jot.pprint();
     Ok(())
 }
 
@@ -44,7 +44,7 @@ pub fn create_todo_command(config: Config, previous_uuids: &HashSet<String>) -> 
     let jot = Jot::new(message.trim(), MessageType::Todo(None), previous_uuids);
 
     append_jot_to_journal(config, &jot)?;
-    jot.pprint_with_custom_msg(None);
+    jot.pprint();
     Ok(())
 }
 
@@ -65,6 +65,6 @@ pub fn create_reminder_command(
     );
 
     append_jot_to_journal(config, &jot)?;
-    jot.pprint_with_custom_msg(None);
+    jot.pprint();
     Ok(())
 }

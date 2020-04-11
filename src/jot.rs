@@ -58,6 +58,11 @@ impl Jot {
         }
     }
 
+    pub fn pprint(&self) {
+        let msg = crate::utils::break_apart_long_string(&self.message.clone());
+        self.pprint_with_custom_msg(Some(&msg));
+    }
+
     /// Pretty print a Jot, we need to support custom messages for
     /// highlighting (such as via grep).
     pub fn pprint_with_custom_msg(&self, msg_override: Option<&str>) {
