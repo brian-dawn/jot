@@ -184,6 +184,8 @@ fn infer_future_time_from_datetime(input: &str, now: DateTime<Local>) -> Option<
 
 #[test]
 fn test_infer_future_time() -> anyhow::Result<()> {
+    std::env::set_var("TZ", "America/Chicago");
+
     let parse = |i: &str| -> DateTime<Local> {
         let parsed_date: DateTime<FixedOffset> = DateTime::parse_from_rfc3339(&i).unwrap();
         let now: DateTime<Local> = DateTime::from(parsed_date);
