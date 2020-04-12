@@ -33,6 +33,12 @@ fn main() -> Result<()> {
                         .help("Filter by a tag"),
                 )
                 .arg(
+                    Arg::with_name("REVERSE")
+                        .short("r")
+                        .long("reverse")
+                        .help("Reverse the output"),
+                )
+                .arg(
                     Arg::with_name("GREP")
                         .short("g")
                         .long("grep")
@@ -65,6 +71,12 @@ fn main() -> Result<()> {
                         .help("Filter by a tag"),
                 )
                 .arg(
+                    Arg::with_name("REVERSE")
+                        .short("r")
+                        .long("reverse")
+                        .help("Reverse the output"),
+                )
+                .arg(
                     Arg::with_name("GREP")
                         .short("g")
                         .long("grep")
@@ -86,6 +98,12 @@ fn main() -> Result<()> {
                         .takes_value(true)
                         .multiple(true)
                         .help("Filter by a tag"),
+                )
+                .arg(
+                    Arg::with_name("REVERSE")
+                        .short("r")
+                        .long("reverse")
+                        .help("Reverse the output"),
                 )
                 .arg(
                     Arg::with_name("GREP")
@@ -147,6 +165,12 @@ fn main() -> Result<()> {
                         .takes_value(true)
                         .multiple(true)
                         .help("Filter by a tag"),
+                )
+                .arg(
+                    Arg::with_name("REVERSE")
+                        .short("r")
+                        .long("reverse")
+                        .help("Reverse the output"),
                 )
                 .arg(
                     Arg::with_name("GREP")

@@ -1,14 +1,26 @@
 /// Commands related to viewing notes/todos/reminders live here.
 use crate::config::Config;
 use crate::constants::*;
-use crate::jot::{stream_jots, MessageType};
+use crate::jot::{stream_jots, Jot, MessageType};
 use anyhow::Result;
 use colorful::Colorful;
 use regex::Regex;
 use std::collections::HashSet;
 
 pub fn display(config: Config, read_cmd: &str, matches: clap::ArgMatches) -> Result<()> {
-    for jot in stream_jots(config)? {
+    let reverse = matches
+        .subcommand_matches(read_cmd)
+        .unwrap()
+        .is_present("REVERSE");
+
+    let jots: Box<dyn Iterator<Item = Jot>> = if !reverse {
+        Box::new(stream_jots(config)?)
+    } else {
+        let mut vecs = stream_jots(config)?.collect::<Vec<Jot>>();
+        vecs.reverse();
+        Box::new(vecs.into_iter())
+    };
+    for jot in jots {
         // See if we need to filter by the message type
         if read_cmd != "cat" {
             match jot.msg_type {

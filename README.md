@@ -117,6 +117,11 @@ Dump everything:
 
     jot cat
 
+Reverse stuff:
+
+    jot cat --reverse
+    jot todos -r
+
 Filter any of the view commands by tags:
 
     jot notes -t @music
