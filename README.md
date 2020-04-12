@@ -1,5 +1,7 @@
 # jot
 
+![CI](https://github.com/brian-dawn/jot/workflows/CI/badge.svg)
+
 Hosted on [SourceHut](https://git.sr.ht/~brian-dawn/jot) but also hosted on [Github](https://github.com/brian-dawn/jot) for convenience. If you're curious why SourceHut is neat check out [this](https://sourcehut.org/blog/2019-10-23-srht-puts-users-first/).
 
 ## Install
