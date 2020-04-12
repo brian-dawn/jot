@@ -44,7 +44,9 @@ pub fn display(config: Config, read_cmd: &str, matches: clap::ArgMatches) -> Res
             }
         }
 
-        let mut msg = crate::utils::break_apart_long_string(&jot.message.clone());
+        let formatted_msg = crate::utils::break_apart_long_string(&jot.message.clone());
+        let mut msg = formatted_msg.clone();
+
         if let Some(sub_matches) = matches.subcommand_matches(read_cmd) {
             // Skip checks.
             let tags = sub_matches
@@ -73,7 +75,7 @@ pub fn display(config: Config, read_cmd: &str, matches: clap::ArgMatches) -> Res
                 })
                 .unwrap_or_default();
 
-            if !(greps.is_empty() || greps.iter().all(|re| re.find(&jot.message).is_some())) {
+            if !(greps.is_empty() || greps.iter().all(|re| re.find(&formatted_msg).is_some())) {
                 continue;
             } else {
                 // We did find some grep'd things. Update and highlight our message.
@@ -81,7 +83,7 @@ pub fn display(config: Config, read_cmd: &str, matches: clap::ArgMatches) -> Res
                 // We need to go in backwards order to preserve the indices.
                 for re in greps {
                     let found = re
-                        .find_iter(&jot.message)
+                        .find_iter(&formatted_msg)
                         .collect::<Vec<_>>()
                         .into_iter()
                         .rev();

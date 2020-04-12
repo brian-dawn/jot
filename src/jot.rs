@@ -150,8 +150,18 @@ impl Jot {
             .take(count_real_chars(&s_header).unwrap_or(0) + header_chars)
             .collect::<String>();
 
+        // Make any tags be bold.
+        // TODO: We should probably move greps into here as well, right now it is in the view
+        // command and that's not where it should live IMO.
+        let mut tag_msg = msg.to_string();
+        let found = TAG_RE.find_iter(&msg).collect::<Vec<_>>().into_iter().rev();
+        for m in found {
+            let highlighted = &tag_msg[m.start()..m.end()].to_string().bold();
+            tag_msg.replace_range(m.start()..m.end(), &highlighted.to_string());
+        }
+
         println!("{}{}{}{}", "┌─", header, s_header, "─┐");
-        println!("{}", msg);
+        println!("{}", tag_msg);
         println!("{}{}{}", "└─", s, "─┘");
     }
 
@@ -298,14 +308,16 @@ pub fn stream_jots(config: config::Config) -> Result<impl Iterator<Item = Jot>> 
         }))
 }
 
+lazy_static! {
+    static ref TAG_RE: Regex = Regex::new(r"@[a-zA-Z][0-9a-zA-Z_]*").unwrap();
+}
+
 /// Parse a line in our jot log.
 fn parse_jot(header_line: &str, message: &str) -> Option<Jot> {
     lazy_static! {
         static ref RE: Regex =
             Regex::new(r"\[(\d\d\d\d\-\d\d\-\d\dT\d\d:\d\d:\d\d-\d\d:\d\d)(.*?)\].*").unwrap();
-        static ref TAG_RE: Regex = Regex::new(r"@[a-zA-Z][0-9a-zA-Z_]*").unwrap();
     }
-
     let caps = RE.captures(header_line)?;
     let date = caps.get(1)?.as_str().trim().to_owned();
     let message_type = caps.get(2).map(|m| m.as_str()).unwrap_or("").trim();
