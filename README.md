@@ -25,6 +25,12 @@ I like putting my journal in a [Syncthing](https://syncthing.net/) (Dropbox woul
 journal_path = "/Users/brian/Sync/journal.txt"
 ```
 
+## Linux Users
+
+You might need to install libdbus in order to have it work with notifications. On Ubuntu (even WSL) you can run:
+
+    sudo apt install libdbus-1-dev
+
 ## MacOS Users
 
 MacOS users already have a `jot` command installed. Make sure
