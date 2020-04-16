@@ -135,7 +135,7 @@ impl Jot {
         );
         let bar_length = std::cmp::max(
             msg.lines()
-                .map(|line| count_real_chars(line.trim()).unwrap_or(0))
+                .map(|line| count_real_chars(line).unwrap_or(0))
                 .max()
                 .unwrap_or(0),
             count_real_chars(header.trim()).unwrap_or(0),
