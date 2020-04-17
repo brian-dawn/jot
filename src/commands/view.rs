@@ -7,6 +7,92 @@ use colorful::Colorful;
 use regex::Regex;
 use std::collections::HashSet;
 
+fn search_string_to_regex(search: &str) -> String {
+    // For now lets just ignore case and put in regex fillers.
+    search
+        .to_ascii_lowercase()
+        .chars()
+        .map(|c| format!("{}", c))
+        .collect::<Vec<String>>()
+        .join("[A-Za-z0-9]*?")
+}
+
+pub fn interactive_search(config: Config) -> Result<()> {
+    use console::Term;
+    let term = Term::stdout();
+    let all_jots: Vec<Jot> = stream_jots(config)?.collect();
+    let mut search_string = String::new();
+    loop {
+        if let Ok(key) = term.read_key() {
+            match key {
+                console::Key::Char(c) => {
+                    search_string.push(c);
+                }
+                console::Key::Backspace => {
+                    search_string.pop();
+                }
+                _ => {
+                    // Do nothing
+                }
+            }
+        }
+
+        let re = Regex::new(&search_string_to_regex(&search_string))?;
+        let mut matched_jots = all_jots
+            .iter()
+            .map(|jot| {
+                let formatted_msg = crate::utils::break_apart_long_string(&jot.message.clone());
+                let lower = formatted_msg.to_ascii_lowercase();
+                let mut msg = formatted_msg.clone();
+                let found = re.find_iter(&lower).collect::<Vec<_>>().into_iter().rev();
+
+                let mut smallest_match = None;
+                for m in found {
+                    let size = m.end() - m.start();
+                    match smallest_match {
+                        None => {
+                            smallest_match = Some(size);
+                        }
+                        Some(smallest) => {
+                            if size < smallest {
+                                smallest_match = Some(size)
+                            } else {
+                                continue;
+                            }
+                        }
+                    }
+
+                    msg = formatted_msg.clone();
+                    let highlighted = &msg[m.start()..m.end()].to_string().red();
+                    msg.replace_range(m.start()..m.end(), &highlighted.to_string());
+                }
+
+                (msg, jot, smallest_match)
+            })
+            .filter(|(_, _, matched_chars)| {
+                match matched_chars {
+                    Some(chars_matched) => {
+                        // Reject long match strings.
+                        *chars_matched < search_string.len() * 2
+                    }
+                    None => false,
+                }
+            })
+            .collect::<Vec<_>>();
+
+        matched_jots
+            .sort_by(|(_, _, a), (_, _, b)| a.unwrap_or(0).partial_cmp(&b.unwrap_or(0)).unwrap());
+
+        term.clear_screen()?;
+
+        for (highlighted_msg, jot, _matched_chars) in matched_jots.iter().take(5) {
+            jot.pprint_with_custom_msg(Some(&highlighted_msg));
+        }
+
+        println!("search: {}", search_string);
+    }
+}
+
 pub fn display(config: Config, read_cmd: &str, matches: clap::ArgMatches) -> Result<()> {
     let reverse = matches
         .subcommand_matches(read_cmd)

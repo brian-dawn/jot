@@ -48,6 +48,12 @@ fn main() -> Result<()> {
                         .help("Filter by contents"),
                 ),
         )
+        // TODO: this command should be moved to the visualization sub commands like a -i flag
+        // or something.
+        .subcommand(
+            SubCommand::with_name("search")
+                .about("Perform interactive fuzzy searching on the journal."),
+        )
         .subcommand(
             SubCommand::with_name("notify")
                 .about("Process any notifications, this is meant to be run from cron."),
@@ -225,6 +231,10 @@ fn main() -> Result<()> {
 
     if let Some(_matches) = matches.subcommand_matches("notify") {
         return commands::notify::notify(config);
+    }
+
+    if let Some(_matches) = matches.subcommand_matches("search") {
+        return commands::view::interactive_search(config);
     }
 
     // Commands for displaying various note types.

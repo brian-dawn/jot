@@ -139,6 +139,10 @@ Delete a note/todo/reminder (where 'fq' is the id):
 
     jot delete fq
 
+Start a fuzzy interactive search:
+
+    jot search
+
 ## Configuration
 
 Jot will use your default `$EDITOR` to determine how notes should be
