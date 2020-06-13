@@ -16,13 +16,13 @@ Initialize jot by running:
 
     jot
 
-If you want to customize where the journal file lives
-edit `$HOME/.config/jot/config.toml` and give it a valid path to your journal.txt (you'll have to create it for now, absolute paths please).
+If you want to customize where the journal files live
+edit `$HOME/.config/jot/config.toml` and give it a valid path to your journal path (you'll have to create it for now, absolute paths please).
 
 I like putting my journal in a [Syncthing](https://syncthing.net/) (Dropbox would also work) folder so my config looks like this:
 
 ```
-journal_path = "/Users/brian/Sync/journal.txt"
+journal_path = "/Users/brian/Sync/jot"
 ```
 
 ## Requirements
@@ -30,21 +30,6 @@ journal_path = "/Users/brian/Sync/journal.txt"
 Make sure `~/.cargo/bin` is in your `$PATH` or add the following to `.bashrc`:
 
     source $HOME/.cargo/env
-
-## Notifications
-
-When you run `jot notify` jot will attempt to notify you via your operating
-systems notification tray (currently only Linux/Macos). We will notify you of any
-notifications that haven't yet been made on this machine, and should have fired within
-the last day. This prevents you from getting spammed with all notifications when you
-setup a new machine, but notification will successfully fire on machines for which
-the `journal.txt` file is synced.
-
-To get this to happen automatically you can use a cron job to periodically fire
-reminders (note you only get 1 minute resolution):
-
-    crontab -e
-    * * * * * /path/to/jot notify
 
 ## Usage
 

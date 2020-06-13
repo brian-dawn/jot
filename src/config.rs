@@ -12,7 +12,7 @@ pub struct Config {
 /// Default journal path for new users.
 fn default_journal_path() -> Option<PathBuf> {
     let mut base = dirs::home_dir()?;
-    base.push(".jot-journal.txt");
+    base.push(".jot");
 
     Some(base)
 }
@@ -54,7 +54,8 @@ pub fn load_config() -> Result<Config> {
                 default_journal_path.to_str().unwrap(),
                 path.to_str().unwrap()
             );
-            File::create(&default_journal_path).expect("failed to create default journal file");
+            std::fs::create_dir(&default_journal_path)
+                .expect("failed to create default journal file");
         }
         Ok(default_config)
     } else {
