@@ -22,7 +22,7 @@ fn main() -> Result<()> {
     }
 
     let matches = App::new("jot")
-        .version("0.1")
+        .version("0.2.0")
         .about("Jot down quick notes")
         .subcommand(
             SubCommand::with_name("cat")
