@@ -17,7 +17,7 @@ Initialize jot by running:
     jot
 
 If you want to customize where the journal file lives
-edit `$HOME/.config/jot/config.toml` and give it a valid path to your journal.txt (you'll have to create it for now, absolute paths please). 
+edit `$HOME/.config/jot/config.toml` and give it a valid path to your journal.txt (you'll have to create it for now, absolute paths please).
 
 I like putting my journal in a [Syncthing](https://syncthing.net/) (Dropbox would also work) folder so my config looks like this:
 
@@ -25,19 +25,11 @@ I like putting my journal in a [Syncthing](https://syncthing.net/) (Dropbox woul
 journal_path = "/Users/brian/Sync/journal.txt"
 ```
 
-## Linux Users
+## Requirements
 
-You might need to install libdbus in order to have it work with notifications. On Ubuntu (even WSL) you can run:
-
-    sudo apt install libdbus-1-dev
-
-## MacOS Users
-
-MacOS users already have a `jot` command installed. Make sure
-`~/.cargo/bin` is in your `$PATH` or add the following to `.bashrc`:
+Make sure `~/.cargo/bin` is in your `$PATH` or add the following to `.bashrc`:
 
     source $HOME/.cargo/env
-
 
 ## Notifications
 
@@ -79,28 +71,6 @@ View all todos:
 Complete a todo (where `kw` is the id):
 
     jot complete kw
-
-
-### Reminders
-
-Make a reminder, note you need to setup notifications first:
-
-    jot reminder in 10 minutes
-    jot reminder sunday at noon
-    jot reminder monday morning
-    jot reminder tomorrow morning
-    jot reminder Monday
-    jot reminder Wed at 10
-    jot reminder on sun at 10pm
-    jot reminder sun 10:30pm
-    jot reminder at 10:30pm
-    jot reminder at noon
-    jot reminder noon
-
-View all reminders:
-
-    jot reminders
-
 
 ### Tags
 
@@ -150,3 +120,11 @@ written/edited. To update this, add the following to your `.bashrc` and update `
 
     export EDITOR='vim'
     export VISUAL='vim'
+
+# Ideas
+
+- Just have notes and maybe todos. Todos honestly can be tags.
+- Allow for titles? Idk maybe, if we can somehow autocomplete tags and titles and create links that could be cool.
+- Allow for journal file to be broken apart into separate files.
+- Interactive graph traversal
+- Custom titles that are the IDs so then it is easy to refer.

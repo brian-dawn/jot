@@ -12,7 +12,6 @@ mod commands;
 mod config;
 mod constants;
 mod jot;
-mod time_infer;
 mod utils;
 
 fn main() -> Result<()> {
@@ -53,14 +52,6 @@ fn main() -> Result<()> {
         .subcommand(
             SubCommand::with_name("search")
                 .about("Perform interactive fuzzy searching on the journal."),
-        )
-        .subcommand(
-            SubCommand::with_name("notify")
-                .about("Process any notifications, this is meant to be run from cron."),
-        )
-        .subcommand(
-            SubCommand::with_name("daemon")
-                .about("Periodically check to see if we need to dump out notifications."),
         )
         .subcommand(SubCommand::with_name("tags").about("List all tags"))
         .subcommand(SubCommand::with_name(TODO).about("Write a todo"))
@@ -202,14 +193,6 @@ fn main() -> Result<()> {
         return commands::create::create_todo_command(config, &previous_uuids);
     }
 
-    if let Some(matches) = matches.subcommand_matches(REMINDER) {
-        let time_str = matches.values_of("TIME").unwrap().join(" ");
-
-        let previous_uuids = commands::view::get_all_uuids(config.clone())
-            .unwrap_or(std::collections::HashSet::new());
-        return commands::create::create_reminder_command(config, &time_str, &previous_uuids);
-    }
-
     if let Some(matches) = matches.subcommand_matches("edit") {
         let id_or_uuid = matches.value_of("ID").unwrap();
         return commands::edit::edit_jot_contents(config, id_or_uuid);
@@ -223,14 +206,6 @@ fn main() -> Result<()> {
     if let Some(matches) = matches.subcommand_matches("complete") {
         let id_or_uuid = matches.value_of("ID").unwrap();
         return commands::edit::mark_todo_complete_command(config, id_or_uuid);
-    }
-
-    if let Some(_matches) = matches.subcommand_matches("daemon") {
-        return commands::notify::daemon_mode(config);
-    }
-
-    if let Some(_matches) = matches.subcommand_matches("notify") {
-        return commands::notify::notify(config);
     }
 
     if let Some(_matches) = matches.subcommand_matches("search") {

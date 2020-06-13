@@ -1,7 +1,6 @@
 /// Commands for creating new notes/todos/reminders.
 use crate::config::Config;
 use crate::jot::{Jot, MessageType};
-use crate::time_infer;
 use anyhow::{Context, Result};
 use std::collections::HashSet;
 use std::fs::OpenOptions;
@@ -42,27 +41,6 @@ pub fn create_todo_command(config: Config, previous_uuids: &HashSet<String>) -> 
     let message = get_user_input()?;
 
     let jot = Jot::new(message.trim(), MessageType::Todo(None), previous_uuids);
-
-    append_jot_to_journal(config, &jot)?;
-    jot.pprint();
-    Ok(())
-}
-
-pub fn create_reminder_command(
-    config: Config,
-    fuzzy_time_input: &str,
-    previous_uuids: &HashSet<String>,
-) -> Result<()> {
-    let reminder_time =
-        time_infer::infer_future_time(&fuzzy_time_input).context("invalid time string")?;
-
-    let message = get_user_input()?;
-
-    let jot = Jot::new(
-        message.trim(),
-        MessageType::Reminder(reminder_time),
-        previous_uuids,
-    );
 
     append_jot_to_journal(config, &jot)?;
     jot.pprint();
