@@ -45,8 +45,7 @@ pub fn tags_command(config: Config) -> Result<()> {
     table.add_row(row![
         "tag".bold(),
         "notes".bold().blue(),
-        "todos".bold().magenta(),
-        "reminders".bold().yellow()
+        "todos".bold().magenta()
     ]);
     for tag in itertools::sorted(all_tags.into_iter()) {
         let notes_cell = Cell::new_align(
