@@ -116,12 +116,6 @@ pub fn display(config: Config, read_cmd: &str, matches: clap::ArgMatches) -> Res
                     }
                 }
 
-                MessageType::Reminder(_) => {
-                    if read_cmd != REMINDERS {
-                        continue;
-                    }
-                }
-
                 MessageType::Todo(_) => {
                     if read_cmd != TODOS {
                         continue;

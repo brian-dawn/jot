@@ -8,7 +8,6 @@ use std::collections::{HashMap, HashSet};
 pub fn tags_command(config: Config) -> Result<()> {
     let mut all_tags = HashSet::new();
     let mut notes = HashMap::new();
-    let mut remns = HashMap::new();
     let mut todos = HashMap::new();
     let increment = |map: &mut HashMap<String, usize>, key: &str| {
         let insert = if let Some(val) = map.get(key) {
@@ -26,13 +25,6 @@ pub fn tags_command(config: Config) -> Result<()> {
                     all_tags.insert(tag);
                 }
             }
-            MessageType::Reminder(_) => {
-                for tag in jot.tags {
-                    increment(&mut remns, &tag);
-                    all_tags.insert(tag);
-                }
-            }
-
             MessageType::Todo(_) => {
                 for tag in jot.tags {
                     increment(&mut todos, &tag);
@@ -75,16 +67,7 @@ pub fn tags_command(config: Config) -> Result<()> {
             format::Alignment::CENTER,
         );
 
-        let remns_cell = Cell::new_align(
-            &remns
-                .get(&tag)
-                .map(|s| s.to_string().yellow())
-                .unwrap_or("".to_string().bold())
-                .to_string(),
-            format::Alignment::CENTER,
-        );
-
-        table.add_row(row![tag, notes_cell, todos_cell, remns_cell]);
+        table.add_row(row![tag, notes_cell, todos_cell]);
     }
     table.printstd();
     Ok(())

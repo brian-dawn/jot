@@ -30,16 +30,6 @@ pub struct Jot {
 pub enum MessageType {
     Note,
 
-    // Due date.
-    Reminder(DateTime<Local>), // [date reminder due-date]
-
-    // Start date, period, period time unit.
-    // e.g. "starting X date, every 2 weeks BLAH" last element is the cancelled time.
-    //ReoccuringReminder(DateTime<FixedOffset>, usize, PeriodTimeUnit, Option<DateTime<Local>>),
-
-    // e.g. "mark this date as Fred's birthday"
-    //DateMarker(DateTime<FixedOffset>),
-
     // Completed date, if not present we haven't completed yet.
     Todo(Option<DateTime<Local>>),
 }
@@ -71,31 +61,6 @@ impl Jot {
         let (amount, amount_unit) = pretty_duration(time_difference);
         let plural_amount_unit = pluralize_time_unit(amount, amount_unit);
         let header_string = match self.msg_type {
-            MessageType::Reminder(reminder_date) => {
-                if reminder_date < now {
-                    // Reminder is in the past.
-
-                    let remind_time = now - reminder_date;
-                    let (fut_amount, fut_amount_unit) = pretty_duration(remind_time);
-
-                    format!(
-                        "{} reminded {} {} ago",
-                        REMINDER.white().bold(),
-                        fut_amount.to_string().bold().blue(),
-                        pluralize_time_unit(fut_amount, fut_amount_unit)
-                    )
-                } else {
-                    // Reminder is in the future.
-                    let remind_time = reminder_date - now;
-                    let (fut_amount, fut_amount_unit) = pretty_duration(remind_time);
-                    format!(
-                        "{} in {} {}",
-                        REMINDER.yellow().bold(),
-                        fut_amount.to_string().bold().blue(),
-                        pluralize_time_unit(fut_amount, fut_amount_unit)
-                    )
-                }
-            }
             MessageType::Todo(None) => format!(
                 "{} {} {} ago",
                 TODO.magenta().bold(),
@@ -178,18 +143,6 @@ impl Jot {
                 }
             }
 
-            MessageType::Reminder(reminder_date) => {
-                let reminder_date_str = reminder_date.to_rfc3339();
-                if let Some(uuid) = &self.uuid {
-                    format!(
-                        "[{} {} on {} id={}]",
-                        date_str, REMIND_HEADER, reminder_date_str, uuid
-                    )
-                } else {
-                    format!("[{} {} on {}]", date_str, REMIND_HEADER, reminder_date_str,)
-                }
-            }
-
             MessageType::Todo(maybe_completed_date) => {
                 let completed_str = maybe_completed_date
                     .map(|date| date.to_rfc3339())
@@ -226,12 +179,6 @@ impl MessageType {
             .map(|id_part| id_part.split("=").last().unwrap_or("").to_string());
 
         match *parts.get(0)? {
-            REMIND_HEADER => {
-                let date = parts.get(2)?;
-                let parsed_date: DateTime<FixedOffset> =
-                    DateTime::parse_from_rfc3339(&date).ok()?;
-                Some((id_part, MessageType::Reminder(DateTime::from(parsed_date))))
-            }
             TODO_HEADER => {
                 let date = parts.get(1)?.trim();
                 if date == TODO_NOT_DONE_PLACEHOLDER {
