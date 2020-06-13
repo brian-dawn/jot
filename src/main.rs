@@ -23,7 +23,7 @@ fn main() -> Result<()> {
 
     let matches = App::new("jot")
         .version("0.1")
-        .about("Jot down quick notes and reminders")
+        .about("Jot down quick notes")
         .subcommand(
             SubCommand::with_name("cat")
                 .about("Dump out the entire journal")
@@ -118,17 +118,8 @@ fn main() -> Result<()> {
                 ),
         )
         .subcommand(
-            SubCommand::with_name(REMINDER)
-                .about("write a reminder")
-                .arg(
-                    Arg::with_name("TIME")
-                        .multiple(true)
-                        .help("Set a time for the reminder"),
-                ),
-        )
-        .subcommand(
             SubCommand::with_name("edit")
-                .about("Edit the contents of a note/todo/reminder")
+                .about("Edit the contents of a note/todo")
                 .arg(
                     Arg::with_name("ID")
                         .value_name("ID")
@@ -154,34 +145,6 @@ fn main() -> Result<()> {
                         .value_name("ID")
                         .takes_value(true)
                         .help("The id of the todo you wish to delete"),
-                ),
-        )
-        .subcommand(
-            SubCommand::with_name(REMINDERS)
-                .about("View all reminders")
-                .arg(
-                    Arg::with_name("TAG")
-                        .short("t")
-                        .long("tag")
-                        .value_name("TAG")
-                        .takes_value(true)
-                        .multiple(true)
-                        .help("Filter by a tag"),
-                )
-                .arg(
-                    Arg::with_name("REVERSE")
-                        .short("r")
-                        .long("reverse")
-                        .help("Reverse the output"),
-                )
-                .arg(
-                    Arg::with_name("GREP")
-                        .short("g")
-                        .long("grep")
-                        .value_name("GREP")
-                        .takes_value(true)
-                        .multiple(true)
-                        .help("Filter by contents"),
                 ),
         )
         .get_matches();
@@ -218,7 +181,7 @@ fn main() -> Result<()> {
     }
 
     // Commands for displaying various note types.
-    let read_sub_cmd = vec![NOTES, REMINDERS, TODOS, "cat"]
+    let read_sub_cmd = vec![NOTES, TODOS, "cat"]
         .into_iter()
         .find(|t| matches.subcommand_matches(t).is_some());
     if let Some(read_cmd) = read_sub_cmd {
