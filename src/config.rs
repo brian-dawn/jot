@@ -1,9 +1,6 @@
 use anyhow::{Context, Result};
-use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 use std::fs::File;
-use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::path::PathBuf;
 
@@ -27,53 +24,6 @@ fn config_path() -> Option<PathBuf> {
     base.push("config.toml");
 
     Some(base)
-}
-
-/// Fetch the path for our notified database.
-/// TODO: We should probably periodically prune old entries from this.
-fn notified_path() -> Option<PathBuf> {
-    let mut base = dirs::data_local_dir()?;
-    base.push("jot-notified");
-    Some(base)
-}
-
-/// We wanna avoid spamming notifications so we keep track of notifications we've
-/// already sent in this file.
-pub fn load_notified() -> Result<HashSet<DateTime<Local>>> {
-    // This is just a line separated file of timestamps.
-    let path = notified_path().context("failed to get data path")?;
-    if !path.exists() {
-        println!("creating {}", path.to_str().unwrap());
-        let _file = File::create(&path)?;
-        return Ok(HashSet::new());
-    }
-
-    let mut file = File::open(path)?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-
-    Ok(contents
-        .split_whitespace()
-        .filter_map(|d| {
-            let parsed_date: DateTime<FixedOffset> = DateTime::parse_from_rfc3339(&d).ok()?;
-            Some(DateTime::from(parsed_date))
-        })
-        .collect())
-}
-
-/// Mark that a particular jot has been notified on this particular computer
-/// that way we don't display it again.
-pub fn mark_notified(dt: DateTime<Local>) -> Result<()> {
-    let path = notified_path().context("failed to get data path")?;
-    let mut file = if !path.exists() {
-        println!("creating {}", path.to_str().unwrap());
-        File::create(&path)?
-    } else {
-        OpenOptions::new().append(true).open(path)?
-    };
-    let date_str = dt.to_rfc3339();
-    writeln!(file, "{}", date_str)?;
-    Ok(())
 }
 
 /// Loads the config, if it doesn't exist we will create it and return the default.

@@ -6,7 +6,6 @@ extern crate lazy_static;
 use crate::constants::*;
 use anyhow::Result;
 use clap::{App, Arg, SubCommand};
-use itertools::Itertools;
 
 mod commands;
 mod config;

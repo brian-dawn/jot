@@ -1,7 +1,7 @@
 /// Commands for creating new notes/todos/reminders.
 use crate::config::Config;
 use crate::jot::{Jot, MessageType};
-use anyhow::{Context, Result};
+use anyhow::Result;
 use std::collections::HashSet;
 use std::fs::OpenOptions;
 use std::io::Write;
