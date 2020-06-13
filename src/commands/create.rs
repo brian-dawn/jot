@@ -3,7 +3,6 @@ use crate::config::Config;
 use crate::jot::{Jot, MessageType};
 use anyhow::Result;
 use std::collections::HashSet;
-use std::fs::OpenOptions;
 use std::io::Write;
 
 /// Get input from the users default $EDITOR.
@@ -18,12 +17,9 @@ fn get_user_input() -> Result<String> {
 }
 
 /// Append a jot to the journal specified in the config.
-fn append_jot_to_journal(config: Config, jot: &Jot) -> Result<()> {
-    let mut file = OpenOptions::new().append(true).open(config.journal_path)?;
-
-    writeln!(file, "{}", jot.to_string())?;
-    writeln!(file)?;
-    writeln!(file)?;
+fn write_jot_to_file(jot: &Jot) -> Result<()> {
+    let mut file = std::fs::File::create(&jot.path)?;
+    file.write_all(jot.to_string().as_bytes())?;
 
     Ok(())
 }
@@ -31,8 +27,10 @@ fn append_jot_to_journal(config: Config, jot: &Jot) -> Result<()> {
 pub fn create_note_command(config: Config, previous_uuids: &HashSet<String>) -> Result<()> {
     let message = get_user_input()?;
 
-    let jot = Jot::new(message.trim(), MessageType::Note, previous_uuids);
-    append_jot_to_journal(config, &jot)?;
+    let path = compute_path(config)?;
+    let jot = Jot::new(&path, message.trim(), MessageType::Note, previous_uuids);
+
+    write_jot_to_file(&jot)?;
     jot.pprint();
     Ok(())
 }
@@ -40,9 +38,24 @@ pub fn create_note_command(config: Config, previous_uuids: &HashSet<String>) -> 
 pub fn create_todo_command(config: Config, previous_uuids: &HashSet<String>) -> Result<()> {
     let message = get_user_input()?;
 
-    let jot = Jot::new(message.trim(), MessageType::Todo(None), previous_uuids);
+    let path = compute_path(config)?;
+    let jot = Jot::new(
+        &path,
+        message.trim(),
+        MessageType::Todo(None),
+        previous_uuids,
+    );
 
-    append_jot_to_journal(config, &jot)?;
+    write_jot_to_file(&jot)?;
     jot.pprint();
     Ok(())
+}
+
+fn compute_path(config: Config) -> Result<std::path::PathBuf> {
+    let now = std::time::SystemTime::now().duration_since(std::time::SystemTime::UNIX_EPOCH)?;
+    let fname = format!("{:0>14}.jot", now.as_secs());
+
+    let mut jot_path = config.journal_path.clone();
+    jot_path.push(fname);
+    Ok(jot_path)
 }

@@ -1,13 +1,14 @@
 use anyhow::Result;
 use chrono::prelude::*;
+use std::fs::File;
+use std::io::prelude::*;
+use std::path::Path;
+use std::path::PathBuf;
 
 use colorful::Colorful;
 use itertools::Itertools;
 use regex::Regex;
 use std::collections::HashSet;
-use std::fs::File;
-
-use std::io::{self, BufRead};
 
 use crate::config;
 use crate::constants::*;
@@ -24,6 +25,8 @@ pub struct Jot {
     pub id: usize,
     pub uuid: Option<String>,
     pub tags: HashSet<String>,
+    // The path to the jot on disk.
+    pub path: PathBuf,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -35,7 +38,12 @@ pub enum MessageType {
 }
 
 impl Jot {
-    pub fn new(message: &str, message_type: MessageType, previous_uuids: &HashSet<String>) -> Jot {
+    pub fn new(
+        path: &Path,
+        message: &str,
+        message_type: MessageType,
+        previous_uuids: &HashSet<String>,
+    ) -> Jot {
         let local: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
 
         Jot {
@@ -45,6 +53,7 @@ impl Jot {
             id: 0,
             uuid: Some(utils::generate_new_uuid(previous_uuids)), // todo replace with randomize fn, we need to know all previous
             tags: HashSet::new(),
+            path: path.to_owned(),
         }
     }
 
@@ -199,60 +208,37 @@ impl MessageType {
     }
 }
 
-/// Stream all the jots from disk.
 pub fn stream_jots(config: config::Config) -> Result<impl Iterator<Item = Jot>> {
-    lazy_static! {
-        static ref RE: Regex =
-            Regex::new(r"\[(\d\d\d\d\-\d\d\-\d\dT\d\d:\d\d:\d\d-\d\d:\d\d).*").unwrap();
-    }
-    let file = File::open(config.journal_path)?;
-    let _buffer = String::new();
-    Ok(io::BufReader::new(file)
-        .lines()
-        .filter_map(Result::ok)
-        .peekable()
-        .batching(|it| {
-            let mut buf = String::new();
-            let mut header_line = String::new();
+    assert!(config.journal_path.is_dir());
 
-            // Warning: It's not clear here but the loop is returning a value.
-            // normally I would have bound it into a variable but clippy didn't
-            // like that. :(
-            loop {
-                let line = it.peek();
+    let mut dirs = std::fs::read_dir(config.journal_path)?
+        .map(|entry| Ok(entry?.path()))
+        .collect::<Result<Vec<_>>>()?;
 
-                // If we reached the EOF then process the last in the buffer.
-                if line.is_none() {
-                    let result = parse_jot(&header_line, &buf);
-                    break result;
-                }
+    dirs.sort();
 
-                if RE.is_match(line?.trim()) {
-                    if !buf.is_empty() {
-                        // We finished reading a jot.
-                        let result = parse_jot(&header_line, &buf);
-                        if result.is_some() {
-                            break result;
-                        } else {
-                            buf = String::new();
-                            header_line = String::new();
-                        }
-                    } else {
-                        header_line = line?.to_string();
-                    }
-                } else {
-                    buf.push('\n');
-                    buf.push_str(&line?);
-                }
-                it.next()?;
-            }
+    // TODO: We can parallelize this.
+    let jot_stream = dirs
+        .into_iter()
+        .filter(|entry| entry.is_file())
+        .filter_map(|file_path| {
+            // Load the file
+            let mut file = File::open(&file_path).ok()?;
+            let mut contents = String::new();
+            file.read_to_string(&mut contents).ok()?;
+            let lines = contents.lines().collect::<Vec<_>>();
+            let header_line = lines.first()?;
+            let message = lines.iter().skip(1).join("\n");
+            Some(parse_jot(header_line, &message, &file_path)?)
         })
         // Give each jot a real ID based on its position in the journal.
         .zip(1..)
         .map(|(mut jot, index)| {
             jot.id = index;
             jot
-        }))
+        });
+
+    Ok(jot_stream)
 }
 
 lazy_static! {
@@ -260,7 +246,7 @@ lazy_static! {
 }
 
 /// Parse a line in our jot log.
-fn parse_jot(header_line: &str, message: &str) -> Option<Jot> {
+fn parse_jot(header_line: &str, message: &str, path: &Path) -> Option<Jot> {
     lazy_static! {
         static ref RE: Regex =
             Regex::new(r"\[(\d\d\d\d\-\d\d\-\d\dT\d\d:\d\d:\d\d-\d\d:\d\d)(.*?)\].*").unwrap();
@@ -284,5 +270,6 @@ fn parse_jot(header_line: &str, message: &str) -> Option<Jot> {
         id: 0,
         uuid: id,
         msg_type: msg_type,
+        path: path.to_owned(),
     })
 }

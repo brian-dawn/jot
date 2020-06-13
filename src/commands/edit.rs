@@ -4,27 +4,17 @@ use crate::jot::{stream_jots, Jot, MessageType};
 use anyhow::Result;
 use chrono::prelude::*;
 use std::io::Write;
-use tempfile::NamedTempFile;
 
-/// Safely write to the journal by writing to a temp file then copying that temp file over our journal.
-fn write_to_journal(config: Config, new_jots: impl Iterator<Item = Jot>) -> Result<()> {
-    let mut tmp_file = NamedTempFile::new()?;
+fn update_jot(jot: &Jot) -> Result<()> {
+    // We are in directory mode so just overwrite that specific file.
 
-    // Read in the entire file Jot file and stream them to a temp file.
-    for new_jot in new_jots {
-        // Write out the stream of jots to the new temp file
-        writeln!(tmp_file, "{}", new_jot.to_string())?;
-        writeln!(tmp_file)?;
-        writeln!(tmp_file)?;
-    }
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(&jot.path)?;
 
-    // Now we move the temp file over the journal.
-    std::fs::copy(tmp_file.path(), config.journal_path)?;
-
-    // Cleanup the temp file because some operating systems may not cleanup often enough.
-    std::fs::remove_file(tmp_file.path())?;
-
-    Ok(())
+    file.write_all(jot.to_string().as_bytes())?;
+    return Ok(());
 }
 
 pub fn mark_todo_complete_command(config: Config, note_id_to_mark_complete: &str) -> Result<()> {
@@ -35,27 +25,28 @@ pub fn mark_todo_complete_command(config: Config, note_id_to_mark_complete: &str
     // TODO: if we didn't find the id/uuid let the user know.
 
     // Read in the entire file Jot file and stream them to a temp file.
-    let new_jots = stream_jots(config.clone())?.map(|mut jot| {
-        if jot.uuid == uuid || Some(jot.id) == maybe_check_id {
-            match jot.msg_type {
-                MessageType::Todo(_) => {
-                    let now: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
-                    jot.msg_type = MessageType::Todo(Some(now));
-                    jot.pprint();
-                    jot
-                }
 
-                _ => {
-                    println!("you can only complete a todo");
-                    std::process::exit(1)
-                }
+    let found_jot =
+        stream_jots(config.clone())?.find(|jot| jot.uuid == uuid || Some(jot.id) == maybe_check_id);
+
+    if let Some(mut jot) = found_jot {
+        match jot.msg_type {
+            MessageType::Todo(_) => {
+                let now: DateTime<Local> = Local::now().with_nanosecond(0).unwrap();
+                jot.msg_type = MessageType::Todo(Some(now));
+                jot.pprint();
+                return update_jot(&jot);
             }
-        } else {
-            jot
-        }
-    });
 
-    write_to_journal(config, new_jots)
+            _ => {
+                println!("you can only complete a todo");
+                std::process::exit(1)
+            }
+        }
+    }
+
+    // TODO: error couldn't find it.
+    Ok(())
 }
 
 pub fn delete_jot(config: Config, note_id_to_delete: &str) -> Result<()> {
@@ -65,18 +56,17 @@ pub fn delete_jot(config: Config, note_id_to_delete: &str) -> Result<()> {
 
     // TODO: if we didn't find the id/uuid let the user know.
 
-    // Read in the entire file Jot file and stream them to a temp file.
-    let new_jots = stream_jots(config.clone())?.filter(|jot| {
+    for jot in stream_jots(config.clone())? {
         let this_one_should_be_deleted = jot.uuid == uuid || Some(jot.id) == maybe_check_id;
         if this_one_should_be_deleted {
-            // Print it out so the user knows it got deleted.
+            // Just delete the file and return.
+            std::fs::remove_file(&jot.path)?;
             jot.pprint();
+
+            return Ok(());
         }
-
-        !this_one_should_be_deleted
-    });
-
-    write_to_journal(config, new_jots)
+    }
+    Ok(())
 }
 
 pub fn edit_jot_contents(config: Config, note_id_to_edit: &str) -> Result<()> {
@@ -84,22 +74,22 @@ pub fn edit_jot_contents(config: Config, note_id_to_edit: &str) -> Result<()> {
     let maybe_check_id = note_id_to_edit.parse::<usize>().ok();
     let uuid = Some(note_id_to_edit.to_string());
 
-    // Read in the entire file Jot file and stream them to a temp file.
-    let new_jots = stream_jots(config.clone())?.map(|mut jot| {
-        if jot.uuid == uuid || Some(jot.id) == maybe_check_id {
-            let message = scrawl::with(&jot.message.trim()).unwrap();
+    let found_jot =
+        stream_jots(config.clone())?.find(|jot| jot.uuid == uuid || Some(jot.id) == maybe_check_id);
 
-            if message.trim().is_empty() {
-                jot
-            } else {
-                jot.message = message;
-                jot.pprint();
-                jot
-            }
+    if let Some(mut jot) = found_jot {
+        let message = scrawl::with(&jot.message.trim()).unwrap();
+
+        if message.trim().is_empty() {
+            return Ok(());
         } else {
-            jot
-        }
-    });
+            jot.message = message;
+            jot.pprint();
 
-    write_to_journal(config, new_jots)
+            return update_jot(&jot);
+        }
+    }
+
+    // TODO jot not found error
+    Ok(())
 }

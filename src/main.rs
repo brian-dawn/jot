@@ -15,6 +15,12 @@ mod utils;
 
 fn main() -> Result<()> {
     let config = config::load_config()?;
+
+    if config.journal_path.is_file() {
+        println!("journal incompatable with this version of jot! We now work on a directory instead of a single file");
+        return Ok(());
+    }
+
     let matches = App::new("jot")
         .version("0.1")
         .about("Jot down quick notes and reminders")
