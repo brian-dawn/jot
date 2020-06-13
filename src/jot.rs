@@ -173,7 +173,7 @@ impl std::fmt::Display for Jot {
     /// The standard to_string impl for Jot.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let st = format!("{}\n{}", self.write_to_header_string(), self.message);
-        write!(f, "{}", &st)
+        write!(f, "{}\n\n", &st.trim())
     }
 }
 
