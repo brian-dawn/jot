@@ -28,6 +28,15 @@ fn main() -> Result<()> {
             SubCommand::with_name("cat")
                 .about("Dump out the entire journal")
                 .arg(
+                    Arg::with_name("RNG")
+                        .short("d")
+                        .long("date")
+                        .value_name("RNG")
+                        .takes_value(true)
+                        .multiple(true)
+                        .help("Filter by a human date range string"),
+                )
+                .arg(
                     Arg::with_name("TAG")
                         .short("t")
                         .long("tag")
@@ -73,6 +82,15 @@ fn main() -> Result<()> {
                         .help("Filter by a tag"),
                 )
                 .arg(
+                    Arg::with_name("RANGE")
+                        .short("d")
+                        .long("date")
+                        .value_name("RANGE")
+                        .takes_value(true)
+                        .multiple(false)
+                        .help("Filter by a human date range string"),
+                )
+                .arg(
                     Arg::with_name("REVERSE")
                         .short("r")
                         .long("reverse")
@@ -100,6 +118,15 @@ fn main() -> Result<()> {
                         .takes_value(true)
                         .multiple(true)
                         .help("Filter by a tag"),
+                )
+                .arg(
+                    Arg::with_name("RANGE")
+                        .short("d")
+                        .long("date")
+                        .value_name("RANGE")
+                        .takes_value(true)
+                        .multiple(false)
+                        .help("Filter by a human date range string"),
                 )
                 .arg(
                     Arg::with_name("REVERSE")

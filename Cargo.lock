@@ -299,6 +299,7 @@ dependencies = [
  "tempfile",
  "textwrap",
  "toml",
+ "two_timer",
 ]
 
 [[package]]
@@ -346,6 +347,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c62be47e61d1842b9170f0fdeec8eba98e60e90e5446449a0545e5152acd7096"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "pidgin"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a83fe8c9814b22b5a1b6e9cb0869708c85662df7f5a8492435221620dcdc293"
+dependencies = [
+ "lazy_static",
+ "regex",
+ "serde",
+ "serde_regex",
 ]
 
 [[package]]
@@ -525,6 +538,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_json"
+version = "1.0.55"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec2c5d7e739bc07a3e73381a39d61fdb5f671c60c1df26a130690665803d8226"
+dependencies = [
+ "itoa",
+ "ryu",
+ "serde",
+]
+
+[[package]]
+name = "serde_regex"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6df1bd02973c8c85e333287f6ac6c6a5fbed414e4be450fd6f52280b7c7b209"
+dependencies = [
+ "regex",
+ "serde",
+]
+
+[[package]]
 name = "strsim"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -623,6 +657,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ffc92d160b1eef40665be3a05630d003936a3bc7da7421277846c2613e92c71a"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "two_timer"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7f17fbc11226332cecf40b77be51500ea86626628e52841e1bffd94b568e50a"
+dependencies = [
+ "chrono",
+ "lazy_static",
+ "pidgin",
+ "regex",
+ "serde_json",
 ]
 
 [[package]]

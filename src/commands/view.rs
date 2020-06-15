@@ -99,6 +99,14 @@ pub fn display(config: Config, read_cmd: &str, matches: clap::ArgMatches) -> Res
         .unwrap()
         .is_present("REVERSE");
 
+    let range = matches
+        .subcommand_matches(read_cmd)
+        .unwrap()
+        .value_of("RNG");
+
+    let human_range =
+        range.map(|st| two_timer::parse(st, None).expect("failed to parse human time"));
+
     let jots: Box<dyn Iterator<Item = Jot>> = if !reverse {
         Box::new(stream_jots(config)?)
     } else {
@@ -107,6 +115,14 @@ pub fn display(config: Config, read_cmd: &str, matches: clap::ArgMatches) -> Res
         Box::new(vecs.into_iter())
     };
     for jot in jots {
+        if let Some((start, end, some_bool)) = human_range {
+            let local = jot.datetime.naive_local();
+
+            if local > end || local < start {
+                continue;
+            }
+        }
+
         // See if we need to filter by the message type
         if read_cmd != "cat" {
             match jot.msg_type {
