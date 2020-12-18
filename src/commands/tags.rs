@@ -17,7 +17,7 @@ pub fn tags_command(config: Config) -> Result<()> {
         };
         map.insert(key.to_string(), insert);
     };
-    for jot in stream_jots(config)? {
+    for jot in stream_jots(config, false)? {
         match jot.msg_type {
             MessageType::Note => {
                 for tag in jot.tags {

@@ -13,6 +13,10 @@ mod constants;
 mod jot;
 mod utils;
 
+// New commands `jot` to make a note `jot list` to cat notes
+// maybe other shorthands? Anyways drop support for todos
+// Make tags be more condensed and colorized.
+
 fn main() -> Result<()> {
     let config = config::load_config()?;
 

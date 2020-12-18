@@ -20,7 +20,7 @@ fn search_string_to_regex(search: &str) -> String {
 pub fn interactive_search(config: Config) -> Result<()> {
     use console::Term;
     let term = Term::stdout();
-    let all_jots: Vec<Jot> = stream_jots(config)?.collect();
+    let all_jots: Vec<Jot> = stream_jots(config, false)?.collect();
     let mut search_string = String::new();
     loop {
         if let Ok(key) = term.read_key() {
@@ -107,13 +107,7 @@ pub fn display(config: Config, read_cmd: &str, matches: clap::ArgMatches) -> Res
     let human_range =
         range.map(|st| two_timer::parse(st, None).expect("failed to parse human time"));
 
-    let jots: Box<dyn Iterator<Item = Jot>> = if !reverse {
-        Box::new(stream_jots(config)?)
-    } else {
-        let mut vecs = stream_jots(config)?.collect::<Vec<Jot>>();
-        vecs.reverse();
-        Box::new(vecs.into_iter())
-    };
+    let jots: Box<dyn Iterator<Item = Jot>> = Box::new(stream_jots(config, reverse)?);
     for jot in jots {
         if let Some((start, end, some_bool)) = human_range {
             let local = jot.datetime.naive_local();
@@ -198,7 +192,7 @@ pub fn display(config: Config, read_cmd: &str, matches: clap::ArgMatches) -> Res
 }
 
 pub fn get_all_uuids(config: Config) -> Result<HashSet<String>> {
-    Ok(stream_jots(config)?
+    Ok(stream_jots(config, false)?
         .map(|jot| jot.uuid)
         .filter_map(|uuid| uuid)
         .collect())

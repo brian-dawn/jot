@@ -208,14 +208,18 @@ impl MessageType {
     }
 }
 
-pub fn stream_jots(config: config::Config) -> Result<impl Iterator<Item = Jot>> {
+pub fn stream_jots(config: config::Config, reversed: bool) -> Result<impl Iterator<Item = Jot>> {
     assert!(config.journal_path.is_dir());
 
     let mut dirs = std::fs::read_dir(config.journal_path)?
         .map(|entry| Ok(entry?.path()))
         .collect::<Result<Vec<_>>>()?;
 
-    dirs.sort();
+    if reversed {
+        dirs.sort_by(|a, b| b.cmp(a));
+    } else {
+        dirs.sort();
+    }
 
     // TODO: We can parallelize this.
     let jot_stream = dirs

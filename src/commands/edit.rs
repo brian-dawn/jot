@@ -26,8 +26,8 @@ pub fn mark_todo_complete_command(config: Config, note_id_to_mark_complete: &str
 
     // Read in the entire file Jot file and stream them to a temp file.
 
-    let found_jot =
-        stream_jots(config.clone())?.find(|jot| jot.uuid == uuid || Some(jot.id) == maybe_check_id);
+    let found_jot = stream_jots(config.clone(), false)?
+        .find(|jot| jot.uuid == uuid || Some(jot.id) == maybe_check_id);
 
     if let Some(mut jot) = found_jot {
         match jot.msg_type {
@@ -56,7 +56,7 @@ pub fn delete_jot(config: Config, note_id_to_delete: &str) -> Result<()> {
 
     // TODO: if we didn't find the id/uuid let the user know.
 
-    for jot in stream_jots(config.clone())? {
+    for jot in stream_jots(config.clone(), false)? {
         let this_one_should_be_deleted = jot.uuid == uuid || Some(jot.id) == maybe_check_id;
         if this_one_should_be_deleted {
             // Just delete the file and return.
@@ -74,8 +74,8 @@ pub fn edit_jot_contents(config: Config, note_id_to_edit: &str) -> Result<()> {
     let maybe_check_id = note_id_to_edit.parse::<usize>().ok();
     let uuid = Some(note_id_to_edit.to_string());
 
-    let found_jot =
-        stream_jots(config.clone())?.find(|jot| jot.uuid == uuid || Some(jot.id) == maybe_check_id);
+    let found_jot = stream_jots(config.clone(), false)?
+        .find(|jot| jot.uuid == uuid || Some(jot.id) == maybe_check_id);
 
     if let Some(mut jot) = found_jot {
         let message = scrawl::with(&jot.message.trim()).unwrap();
